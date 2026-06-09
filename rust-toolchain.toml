@@ -1,0 +1,4 @@
+# Tauri on Windows must link with MSVC (link.exe from Visual Studio), not the
+# mingw/GNU linker — the GNU linker fails on the large export tables here.
+[toolchain]
+channel = "stable-x86_64-pc-windows-msvc"
