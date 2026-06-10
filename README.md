@@ -60,14 +60,26 @@ npm run tauri build    # інсталятор → src-tauri\target\release\bundl
 > `rust-toolchain.toml`. Дефолтний `gnu`-тулчейн ламає збірку Tauri
 > (`error: export ordinal too large`). Потрібні також Node і WebView2 (є в Win10/11).
 
-## Цифровий підпис
+## Цифровий підпис (опціонально)
 
-Збірка підписує `.exe` та інсталятор, якщо в `src-tauri/tauri.conf.json` заданий
-`bundle.windows.certificateThumbprint`. Зараз там self-signed сертифікат
-`CN=Abergin` (валідний лише на машинах, де він доданий у Trusted Root). Щоб
+Звичайна збірка `npm run tauri build` **не підписує** нічого і працює без
+сертифіката — тож зібрати може будь-хто.
+
+Щоб підписати `.exe` та інсталятор:
+
+1. Скопіюй `src-tauri/tauri.signing.conf.example.json` →
+   `src-tauri/tauri.signing.conf.json` (цей файл у `.gitignore`).
+2. Впиши `certificateThumbprint` свого сертифіката (з `Cert:\CurrentUser\My`).
+3. Збери:
+
+   ```powershell
+   npm run tauri:build:signed
+   ```
+
+Для тесту згодиться self-signed сертифікат (`New-SelfSignedCertificate -Type
+CodeSigningCert`), валідний лише на машинах, де його додано в Trusted Root. Щоб
 прибрати SmartScreen на чужих ПК — потрібен справжній сертифікат (Azure Trusted
-Signing / OV / EV): достатньо замінити thumbprint (або задати
-`bundle.windows.signCommand` для Azure).
+Signing / OV / EV).
 
 ## Дані застосунку
 

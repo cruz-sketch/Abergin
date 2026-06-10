@@ -1,0 +1,10 @@
+{
+  "$comment": "Optional code-signing overlay. Copy to tauri.signing.conf.json, set your cert thumbprint, then build with: npm run tauri:build:signed (which passes --config src-tauri/tauri.signing.conf.json). The plain `npm run tauri build` stays unsigned and works without any certificate.",
+  "bundle": {
+    "windows": {
+      "certificateThumbprint": "YOUR_CERT_SHA1_THUMBPRINT_HERE",
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com"
+    }
+  }
+}
