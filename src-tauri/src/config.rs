@@ -39,7 +39,7 @@ fn default_config() -> Value {
         profiles.push(json!({
             "name": "PowerShell",
             "shell": powershell,
-            "args": ["-NoLogo", "-NoExit", "-Command", "Set-PSReadLineOption -EditMode Emacs"],
+            "args": ["-NoLogo", "-NoExit", "-Command", "try { Set-PSReadLineOption -EditMode Emacs } catch {}"],
             "cwd": null,
             "color": "#7aa2f7"
         }));
@@ -48,7 +48,7 @@ fn default_config() -> Value {
         profiles.push(json!({
             "name": "PowerShell 7",
             "shell": pwsh,
-            "args": ["-NoLogo", "-NoExit", "-Command", "Set-PSReadLineOption -EditMode Emacs"],
+            "args": ["-NoLogo", "-NoExit", "-Command", "try { Set-PSReadLineOption -EditMode Emacs } catch {}"],
             "cwd": null,
             "color": "#2f74c0"
         }));
