@@ -1,101 +1,133 @@
-# Abergin
+<h1 align="center">Abergin</h1>
 
-Стильний нативний термінал для Windows у дусі дефолтної консолі Linux / Ghostty.
-Збудований на **Tauri 2 (Rust)** + **xterm.js**, працює напряму через ConPTY
-(`portable-pty`). Маленький (інсталятор ~1.3 МБ), бо використовує системний
-WebView2, а не вбудований Chromium.
+<p align="center">
+  A fast, modern terminal for Windows — tabs, split panes, SSH profiles &amp; themes.<br>
+  Built with <strong>Tauri 2 (Rust)</strong> + <strong>xterm.js</strong>.
+</p>
 
-## Можливості
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white" alt="Platform: Windows">
+  <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
+  <img src="https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white" alt="Rust">
+</p>
 
-- **Профілі** — автодетект PowerShell, PowerShell 7, Git Bash, WSL, Command Prompt.
-  Зберігаються у `%APPDATA%\com.abergin.terminal\config.json` (редагується з меню `⌄`).
-- **Bash-комбінації** — PowerShell стартує в `EditMode Emacs`, тож працюють
-  `Ctrl+W`, `Ctrl+A/E`, `Ctrl+U/K`, `Ctrl+R` (пошук в історії), `Alt+B/F`.
-  У Git Bash / WSL — нативно.
-- **Історія команд** — на рівні шелу (PSReadLine/readline) + скролбек 10000 рядків.
-- **Вкладки** — кілька сесій, перейменування (подвійний клік / меню), **drag-and-drop**
-  для зміни порядку. Відновлюються між запусками.
-- **Split-панелі** — вкладка ділиться на дерево панелей (як tmux / Windows Terminal),
-  кожна — окрема сесія; роздільники тягнуться мишею; розкладка зберігається.
-- **SSH-менеджер** — зберігай підключення (хост/користувач/порт/ключ) і підключайся
-  одним кліком; використовує вбудований Windows OpenSSH.
-- **Select-to-copy** + вставка середньою кнопкою (як у Linux).
-- **Теми** — 6 вбудованих (Tokyo Night, Dracula, Gruvbox Dark, Nord, One Dark,
-  Solarized Light); змінюють увесь інтерфейс.
-- **Масштаб тексту** — `Ctrl +/-/0` або `Ctrl`+колесо.
-- **Багатомовність** — 14 мов: українська, English, Deutsch, Français, Español,
-  Polski, Čeština, Lietuvių, Latviešu, Eesti, Norsk, Română (Moldova),
-  Azərbaycan, 日本語. При першому запуску мова визначається з локалі ОС
-  (інакше — англійська); потім її можна змінити в меню.
-- **Довідка** — `F1`.
-- **Вигляд** — frameless-вікно, кастомний титлбар, суцільний фон (без acrylic — він
-  лагає при перетягуванні на Windows 10).
+<p align="center">
+  <strong>English</strong> · <a href="README.uk.md">Українська</a>
+</p>
 
-## Гарячі клавіші
+A stylish, native terminal for Windows in the spirit of the default Linux console
+/ Ghostty. It talks to shells directly through ConPTY (`portable-pty`) and stays
+tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromium.
 
-| Клавіші | Дія |
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshot-split-panes.png" width="100%" alt="Split panes: htop, a file manager and an SSH session in one tab">
+</p>
+<p align="center">
+  <img src="docs/screenshot-menu.png" width="49%" alt="Profiles, SSH connections and theme menu">
+  <img src="docs/screenshot-context-menu.png" width="49%" alt="Pane context menu">
+</p>
+<p align="center">
+  <img src="docs/screenshot-monitoring.png" width="100%" alt="System monitoring with full 256-color output">
+</p>
+
+## Features
+
+- **Profiles** — auto-detects PowerShell, PowerShell 7, Git Bash, WSL, Command
+  Prompt. Stored in `%APPDATA%\com.abergin.terminal\config.json` (editable from the `⌄` menu).
+- **Bash keybindings** — PowerShell launches in `EditMode Emacs`, so `Ctrl+W`,
+  `Ctrl+A/E`, `Ctrl+U/K`, `Ctrl+R` (history search), `Alt+B/F` work. Native in Git Bash / WSL.
+- **Command history** — at the shell level (PSReadLine/readline) + 10 000-line scrollback.
+- **Tabs** — multiple sessions, rename (double-click / menu), **drag-and-drop**
+  reordering. Restored between launches.
+- **Split panes** — a tab splits into a tree of panes (like tmux / Windows
+  Terminal), each its own session; drag the dividers to resize; layout persists.
+- **SSH manager** — save connections (host/user/port/key) and connect in one
+  click; uses the built-in Windows OpenSSH.
+- **Select-to-copy** + middle-click paste (Linux convention).
+- **Themes** — 6 built-in (Tokyo Night, Dracula, Gruvbox Dark, Nord, One Dark,
+  Solarized Light); they restyle the whole app.
+- **Text zoom** — `Ctrl +/-/0` or `Ctrl`+wheel.
+- **14 languages** — Ukrainian, English, Deutsch, Français, Español, Polski,
+  Čeština, Lietuvių, Latviešu, Eesti, Norsk, Română (Moldova), Azərbaycan, 日本語.
+  On first launch the language is picked from the OS locale (English otherwise),
+  then changeable from the menu.
+- **Help** — `F1`.
+- **Look** — frameless window, custom title bar, solid background (acrylic dropped
+  — it lags while dragging on Windows 10).
+
+## Keyboard shortcuts
+
+| Keys | Action |
 |---|---|
-| `Ctrl+Shift+T` | нова вкладка |
-| `Ctrl+Shift+W` | закрити панель (остання → вкладку) |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | перемикання вкладок |
-| `Alt+1…9` | перейти на N-ту вкладку |
-| `Ctrl+Shift+D` / `Ctrl+Shift+E` | розділити панель праворуч / вниз |
-| `Alt+←↑↓→` | перехід між панелями |
-| `Ctrl+Shift+C` / `Ctrl+Shift+V` | копіювати / вставити |
-| `Ctrl + =` / `Ctrl + -` / `Ctrl + 0` | масштаб тексту |
-| `F1` | довідка |
-| середня кнопка миші | вставити |
+| `Ctrl+Shift+T` | new tab |
+| `Ctrl+Shift+W` | close pane (last one → tab) |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | switch tabs |
+| `Alt+1…9` | jump to Nth tab |
+| `Ctrl+Shift+D` / `Ctrl+Shift+E` | split pane right / down |
+| `Alt+←↑↓→` | move focus between panes |
+| `Ctrl+Shift+C` / `Ctrl+Shift+V` | copy / paste |
+| `Ctrl + =` / `Ctrl + -` / `Ctrl + 0` | text zoom |
+| `F1` | help |
+| middle mouse button | paste |
 
-> Решта комбінацій (`Ctrl+W`, `Ctrl+A`, `Ctrl+R`…) передаються в шел.
+> Everything else (`Ctrl+W`, `Ctrl+A`, `Ctrl+R`…) is forwarded to the shell.
 
-## Розробка та збірка
+## Develop & build
 
 ```powershell
 npm install
-npm run tauri dev      # режим розробки (Vite + Rust, відкриває вікно)
-npm run tauri build    # інсталятор → src-tauri\target\release\bundle\nsis\
+npm run tauri dev      # dev mode (Vite + Rust, opens a window)
+npm run tauri build    # installer → src-tauri\target\release\bundle\nsis\
 ```
 
-> **Тулчейн:** збірка вимагає **MSVC** (лінкер із Visual Studio). Зафіксовано в
-> `rust-toolchain.toml`. Дефолтний `gnu`-тулчейн ламає збірку Tauri
-> (`error: export ordinal too large`). Потрібні також Node і WebView2 (є в Win10/11).
+> **Toolchain:** the build needs **MSVC** (the linker from Visual Studio), pinned
+> in `rust-toolchain.toml`. The default `gnu` toolchain breaks the Tauri build
+> (`error: export ordinal too large`). Node and WebView2 are also required
+> (WebView2 ships with Windows 10/11).
 
-## Цифровий підпис (опціонально)
+## Code signing (optional)
 
-Звичайна збірка `npm run tauri build` **не підписує** нічого і працює без
-сертифіката — тож зібрати може будь-хто.
+A plain `npm run tauri build` is **unsigned** and builds without any certificate,
+so anyone can compile it.
 
-Щоб підписати `.exe` та інсталятор:
+To sign the `.exe` and installer:
 
-1. Скопіюй `src-tauri/tauri.signing.conf.example.json` →
-   `src-tauri/tauri.signing.conf.json` (цей файл у `.gitignore`).
-2. Впиши `certificateThumbprint` свого сертифіката (з `Cert:\CurrentUser\My`).
-3. Збери:
+1. Copy `src-tauri/tauri.signing.conf.example.json` →
+   `src-tauri/tauri.signing.conf.json` (this file is gitignored).
+2. Put your certificate's `certificateThumbprint` (from `Cert:\CurrentUser\My`).
+3. Build:
 
    ```powershell
    npm run tauri:build:signed
    ```
 
-Для тесту згодиться self-signed сертифікат (`New-SelfSignedCertificate -Type
-CodeSigningCert`), валідний лише на машинах, де його додано в Trusted Root. Щоб
-прибрати SmartScreen на чужих ПК — потрібен справжній сертифікат (Azure Trusted
-Signing / OV / EV).
+A self-signed cert (`New-SelfSignedCertificate -Type CodeSigningCert`) is fine for
+testing — valid only on machines where it's added to Trusted Root. To clear
+SmartScreen on other machines you need a real certificate (Azure Trusted Signing /
+OV / EV).
 
-## Дані застосунку
+## App data
 
 `%APPDATA%\com.abergin.terminal\`
-- `config.json` — профілі, шрифт, базова тема.
-- `state.json` — відкриті вкладки + розкладка панелей, SSH-підключення, мова,
-  поточна тема, розмір шрифту.
+- `config.json` — profiles, font, base theme.
+- `state.json` — open tabs + pane layout, SSH connections, language, current
+  theme, font size.
 
-## Структура
+## Project layout
 
 ```
-index.html, src/main.js, src/style.css  — фронтенд (xterm.js, UI, вкладки/панелі,
-                                            гарячі клавіші, теми, i18n, SSH, довідка)
-src-tauri/src/pty.rs       — ConPTY-сесії (spawn / read / write / resize / close)
-src-tauri/src/config.rs    — профілі та config.json
-src-tauri/src/state.rs     — state.json (get_state / save_state), шлях до ssh.exe
-src-tauri/src/lib.rs       — точка входу Tauri, реєстрація команд
-src-tauri/tauri.conf.json  — вікно, бандл, підпис
+index.html, src/main.js, src/style.css  — frontend (xterm.js, UI, tabs/panes,
+                                            shortcuts, themes, i18n, SSH, help)
+src-tauri/src/pty.rs       — ConPTY sessions (spawn / read / write / resize / close)
+src-tauri/src/config.rs    — profiles & config.json
+src-tauri/src/state.rs     — state.json (get_state / save_state), ssh.exe path
+src-tauri/src/lib.rs       — Tauri entry point, command registration
+src-tauri/tauri.conf.json  — window & bundle config
 ```
+
+## License
+
+[MIT](LICENSE) © 2026 Cruz
