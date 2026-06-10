@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Mutex;
 
 use base64::Engine;
+use parking_lot::Mutex;
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
@@ -90,7 +90,7 @@ pub fn create_session(
 
     let id = state.counter.fetch_add(1, Ordering::SeqCst);
 
-    state.sessions.lock().unwrap().insert(
+    state.sessions.lock().insert(
         id,
         Session {
             master: pair.master,
@@ -129,7 +129,7 @@ pub fn write_session(
     id: u32,
     data: String,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
+    let mut sessions = state.sessions.lock();
     if let Some(sess) = sessions.get_mut(&id) {
         sess.writer
             .write_all(data.as_bytes())
@@ -146,7 +146,7 @@ pub fn resize_session(
     cols: u16,
     rows: u16,
 ) -> Result<(), String> {
-    let sessions = state.sessions.lock().unwrap();
+    let sessions = state.sessions.lock();
     if let Some(sess) = sessions.get(&id) {
         sess.master
             .resize(PtySize {
@@ -162,7 +162,7 @@ pub fn resize_session(
 
 #[tauri::command]
 pub fn close_session(state: tauri::State<'_, PtyState>, id: u32) -> Result<(), String> {
-    if let Some(mut sess) = state.sessions.lock().unwrap().remove(&id) {
+    if let Some(mut sess) = state.sessions.lock().remove(&id) {
         let _ = sess.child.kill();
     }
     Ok(())
