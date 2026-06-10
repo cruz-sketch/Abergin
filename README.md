@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/cruz-sketch/Abergin/releases"><img src="https://img.shields.io/github/v/release/cruz-sketch/Abergin?include_prereleases&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white" alt="Platform: Windows">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
@@ -108,6 +109,20 @@ A self-signed cert (`New-SelfSignedCertificate -Type CodeSigningCert`) is fine f
 testing — valid only on machines where it's added to Trusted Root. To clear
 SmartScreen on other machines you need a real certificate (Azure Trusted Signing /
 OV / EV).
+
+## Releases
+
+Pushing a `v*` tag runs the GitHub Actions workflow (`.github/workflows/release.yml`),
+which builds the (unsigned) Windows installer and uploads it to a **draft** GitHub
+Release. To cut one, bump the version in `package.json`, `src-tauri/Cargo.toml` and
+`src-tauri/tauri.conf.json`, then:
+
+```powershell
+git tag v0.1.0
+git push github v0.1.0
+```
+
+Review the draft release on GitHub and publish it.
 
 ## App data
 

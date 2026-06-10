@@ -1,0 +1,58 @@
+name: Release
+
+# Build the Windows installer and attach it to a GitHub Release whenever a
+# version tag (e.g. v0.1.0) is pushed. Can also be run manually for testing.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust (MSVC)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Builds the app (unsigned — signing config lives in a gitignored file),
+      # creates a draft GitHub Release for the tag and uploads the NSIS installer.
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Abergin ${{ github.ref_name }}"
+          releaseBody: |
+            ### Abergin ${{ github.ref_name }}
+
+            Download the Windows installer (`.exe`) from the assets below.
+
+            > This is an **unsigned** build, so Windows SmartScreen may warn about an
+            > unknown publisher — click **More info → Run anyway**.
+          releaseDraft: true
+          prerelease: false

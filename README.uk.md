@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/cruz-sketch/Abergin/releases"><img src="https://img.shields.io/github/v/release/cruz-sketch/Abergin?include_prereleases&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white" alt="Platform: Windows">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
@@ -108,6 +109,20 @@ npm run tauri build    # інсталятор → src-tauri\target\release\bundl
 CodeSigningCert`), валідний лише на машинах, де його додано в Trusted Root. Щоб
 прибрати SmartScreen на чужих ПК — потрібен справжній сертифікат (Azure Trusted
 Signing / OV / EV).
+
+## Релізи
+
+Пуш тегу `v*` запускає GitHub Actions (`.github/workflows/release.yml`), який
+збирає (непідписаний) інсталятор і кладе його в **чернетку** GitHub Release. Щоб
+зробити реліз — підніми версію в `package.json`, `src-tauri/Cargo.toml` і
+`src-tauri/tauri.conf.json`, потім:
+
+```powershell
+git tag v0.1.0
+git push github v0.1.0
+```
+
+Перевір чернетку релізу на GitHub і опублікуй.
 
 ## Дані застосунку
 
