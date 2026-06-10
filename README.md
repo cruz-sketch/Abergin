@@ -17,7 +17,7 @@
   <strong>English</strong> · <a href="README.uk.md">Українська</a>
 </p>
 
-A stylish, native terminal for Windows in the spirit of the default Linux console
+Abergin (short from Aubergine, /ˈəʊ.bə.ʒiːn/) - a stylish, native terminal for Windows in the spirit of the default Linux console
 / Ghostty. It talks to shells directly through ConPTY (`portable-pty`) and stays
 tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromium.
 
