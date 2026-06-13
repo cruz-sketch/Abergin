@@ -30,6 +30,13 @@ body {
   -webkit-user-select: none;
 }
 
+.fatal-error {
+  margin: 24px;
+  padding: 16px;
+  color: var(--danger, #f7768e);
+  white-space: pre-wrap;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -279,6 +286,11 @@ body {
 }
 .pane.active {
   display: block;
+}
+.pane.measuring {
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* A split node: a flex container of two children + a draggable splitter. */

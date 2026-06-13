@@ -1042,6 +1042,7 @@ const tabs = new Map(); // tabId   -> Tab
 const leaves = new Map(); // sessionId -> Leaf (for PTY output dispatch)
 let activeTabId = null;
 let tabSeq = 0;
+let restoringState = false;
 
 let sshConnections = []; // [{ name, host, user, port, key }]
 let sshPath = "ssh"; // resolved by the backend
@@ -1085,6 +1086,7 @@ function serializeNode(node) {
 // Persist open tabs + their pane layout (so renamed tabs and splits survive a
 // restart), SSH connections, and the chosen language.
 function persistState() {
+  if (restoringState) return;
   const tabsArr = [...tabs.values()]
     .filter((t) => t.root)
     .map((t) => ({
@@ -1094,7 +1096,7 @@ function persistState() {
     }));
   invoke("save_state", {
     state: { tabs: tabsArr, ssh: sshConnections, locale, theme: themeId, fontSize },
-  }).catch(() => {});
+  }).catch((error) => console.error("Failed to save state:", error));
 }
 
 function b64ToBytes(b64) {
@@ -1140,23 +1142,40 @@ async function makeLeaf(tab, profile) {
     fit.fit();
   } catch {}
 
-  const sessionId = await invoke("create_session", {
-    profile: {
-      name: profile.name,
-      shell: profile.shell,
-      args: profile.args ?? [],
-      cwd: profile.cwd ?? null,
-    },
-    cols: term.cols || 80,
-    rows: term.rows || 24,
-  });
+  let sessionId;
+  try {
+    sessionId = await invoke("create_session", {
+      profile: {
+        name: profile.name,
+        shell: profile.shell,
+        args: profile.args ?? [],
+        cwd: profile.cwd ?? null,
+      },
+      cols: term.cols || 80,
+      rows: term.rows || 24,
+    });
+  } catch (error) {
+    term.dispose();
+    el.remove();
+    throw error;
+  }
 
   const leaf = { sessionId, term, fit, el, profile, tab, node: null, ro: null };
   leaf.node = { type: "leaf", leaf, parent: null };
   el._leaf = leaf;
   leaves.set(sessionId, leaf);
 
-  term.onData((data) => invoke("write_session", { id: sessionId, data }));
+  try {
+    await invoke("attach_session", { id: sessionId });
+  } catch (error) {
+    leaves.delete(sessionId);
+    await invoke("close_session", { id: sessionId }).catch(() => {});
+    term.dispose();
+    el.remove();
+    throw error;
+  }
+
+  term.onData((data) => invoke("write_session", { id: sessionId, data }).catch(() => {}));
   if (config.copyOnSelect) {
     term.onSelectionChange(() => {
       const sel = term.getSelection();
@@ -1183,7 +1202,8 @@ async function createTab(profile, customName, layoutSpec) {
   const id = ++tabSeq;
 
   const container = document.createElement("div");
-  container.className = "pane";
+  // Let xterm measure the real pane size before its PTY starts producing output.
+  container.className = "pane measuring";
   $panes.appendChild(container);
 
   const tabEl = buildTabButton(id, profile);
@@ -1205,30 +1225,48 @@ async function createTab(profile, customName, layoutSpec) {
     if (lbl) lbl.textContent = customName;
   }
 
-  tab.root = layoutSpec
-    ? await buildNode(tab, layoutSpec, null)
-    : (await makeLeaf(tab, profile)).node;
+  try {
+    tab.root = layoutSpec
+      ? await buildNode(tab, layoutSpec, null)
+      : (await makeLeaf(tab, profile)).node;
+  } catch (error) {
+    for (const leaf of [...leaves.values()].filter((leaf) => leaf.tab === tab)) {
+      await invoke("close_session", { id: leaf.sessionId }).catch(() => {});
+      leaf.ro?.disconnect();
+      leaf.term.dispose();
+      leaves.delete(leaf.sessionId);
+    }
+    tab.container.remove();
+    tab.tabEl.remove();
+    tabs.delete(id);
+    throw error;
+  }
   tab.activeLeaf = firstLeaf(tab.root);
 
   renderTab(tab);
+  tab.container.classList.remove("measuring");
   activate(id);
   persistState();
   return id;
 }
 
 async function buildNode(tab, spec, parent) {
-  if (spec.type === "split") {
+  if (spec?.type === "split") {
+    const validSizes =
+      Array.isArray(spec.sizes) &&
+      spec.sizes.length === 2 &&
+      spec.sizes.every((size) => Number.isFinite(size) && size > 0);
     const node = {
       type: "split",
       dir: spec.dir === "col" ? "col" : "row",
-      sizes: spec.sizes ?? [1, 1],
+      sizes: validSizes ? spec.sizes : [1, 1],
       parent,
       a: null,
       b: null,
       el: null,
     };
-    node.a = await buildNode(tab, spec.a, node);
-    node.b = await buildNode(tab, spec.b, node);
+    node.a = await buildNode(tab, spec.a ?? {}, node);
+    node.b = await buildNode(tab, spec.b ?? {}, node);
     return node;
   }
   const prof =
@@ -1950,9 +1988,10 @@ function buildProfileMenu() {
 // ---------------------------------------------------------------------------
 function sshProfile(conn) {
   const target = conn.user ? `${conn.user}@${conn.host}` : conn.host;
-  const args = [target];
+  const args = [];
   if (conn.port && String(conn.port) !== "22") args.push("-p", String(conn.port));
   if (conn.key) args.push("-i", conn.key);
+  args.push(target);
   return {
     name: conn.name || target,
     shell: sshPath,
@@ -2103,13 +2142,14 @@ async function main() {
 
   // Restore SSH connections + saved tabs from the previous session.
   const saved = await invoke("get_state").catch(() => ({}));
-  sshConnections = saved.ssh ?? [];
+  sshConnections = Array.isArray(saved.ssh) ? saved.ssh : [];
   sshPath = saved.sshPath ?? "ssh";
-  locale = saved.locale ?? detectLocale();
+  locale = I18N[saved.locale] ? saved.locale : detectLocale();
   applyI18n();
 
   // Restore theme + zoom before any terminal is created.
-  fontSize = saved.fontSize ?? config.fontSize ?? 13;
+  const savedFontSize = Number(saved.fontSize ?? config.fontSize);
+  fontSize = Number.isFinite(savedFontSize) ? Math.max(6, Math.min(40, savedFontSize)) : 13;
   themeId = THEMES[saved.theme] ? saved.theme : "tokyo-night";
   applyTheme(THEMES[themeId]);
 
@@ -2207,15 +2247,39 @@ async function main() {
   watchDpr();
 
   // Restore previous tabs (with their pane layouts), or open a default one.
-  const savedTabs = saved.tabs ?? [];
-  if (savedTabs.length) {
-    for (const ti of savedTabs) {
-      const prof = config.profiles.find((p) => p.name === ti.profile) || defaultProfile();
-      await createTab(prof, ti.name ?? undefined, ti.layout);
+  const savedTabs = Array.isArray(saved.tabs) ? saved.tabs : [];
+  restoringState = true;
+  try {
+    if (savedTabs.length) {
+      for (const ti of savedTabs) {
+        if (!ti || typeof ti !== "object") {
+          console.error("Skipping malformed saved tab:", ti);
+          continue;
+        }
+        const prof = config.profiles.find((p) => p.name === ti.profile) || defaultProfile();
+        try {
+          await createTab(prof, ti.name ?? undefined, ti.layout);
+        } catch (error) {
+          console.error(`Failed to restore tab "${ti.name ?? ti.profile ?? "unknown"}":`, error);
+        }
+      }
     }
-  } else {
+  } catch (error) {
+    console.error("Failed while restoring tabs:", error);
+  } finally {
+    restoringState = false;
+  }
+  if (tabs.size === 0) {
     await createTab();
+  } else {
+    persistState();
   }
 }
 
-main();
+main().catch((error) => {
+  console.error("Failed to start Abergin:", error);
+  const message = document.createElement("pre");
+  message.className = "fatal-error";
+  message.textContent = `Abergin failed to start:\n${String(error)}`;
+  document.body.appendChild(message);
+});

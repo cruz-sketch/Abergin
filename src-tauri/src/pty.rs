@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 use base64::Engine;
 use parking_lot::Mutex;
@@ -13,11 +14,12 @@ struct Session {
     master: Box<dyn MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     child: Box<dyn portable_pty::Child + Send + Sync>,
+    reader: Option<Box<dyn Read + Send>>,
 }
 
 #[derive(Default)]
 pub struct PtyState {
-    sessions: Mutex<HashMap<u32, Session>>,
+    sessions: Arc<Mutex<HashMap<u32, Session>>>,
     counter: AtomicU32,
 }
 
@@ -44,7 +46,6 @@ struct ExitPayload {
 
 #[tauri::command]
 pub fn create_session(
-    app: AppHandle,
     state: tauri::State<'_, PtyState>,
     profile: ProfileInput,
     cols: u16,
@@ -68,7 +69,7 @@ pub fn create_session(
         .cwd
         .clone()
         .filter(|c| !c.is_empty())
-        .or_else(|| dirs_home());
+        .or_else(dirs_home);
     if let Some(dir) = cwd {
         cmd.cwd(dir);
     }
@@ -77,15 +78,9 @@ pub fn create_session(
     // Expose the active profile name to the shell (handy for prompts/scripts).
     cmd.env("ABERGIN_PROFILE", &profile.name);
 
-    let child = pair
-        .slave
-        .spawn_command(cmd)
-        .map_err(|e| e.to_string())?;
+    let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
 
-    let reader = pair
-        .master
-        .try_clone_reader()
-        .map_err(|e| e.to_string())?;
+    let reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
     let id = state.counter.fetch_add(1, Ordering::SeqCst);
@@ -96,29 +91,51 @@ pub fn create_session(
             master: pair.master,
             writer,
             child,
+            reader: Some(reader),
         },
     );
-
-    // Pump PTY output to the frontend on a dedicated thread.
-    spawn_reader(app, id, reader);
 
     Ok(id)
 }
 
-fn spawn_reader(app: AppHandle, id: u32, mut reader: Box<dyn Read + Send>) {
+#[tauri::command]
+pub fn attach_session(
+    app: AppHandle,
+    state: tauri::State<'_, PtyState>,
+    id: u32,
+) -> Result<(), String> {
+    let reader = state
+        .sessions
+        .lock()
+        .get_mut(&id)
+        .ok_or_else(|| format!("session {id} does not exist"))?
+        .reader
+        .take()
+        .ok_or_else(|| format!("session {id} is already attached"))?;
+
+    spawn_reader(app, id, reader, Arc::clone(&state.sessions));
+    Ok(())
+}
+
+fn spawn_reader(
+    app: AppHandle,
+    id: u32,
+    mut reader: Box<dyn Read + Send>,
+    sessions: Arc<Mutex<HashMap<u32, Session>>>,
+) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 8192];
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
-                    let encoded =
-                        base64::engine::general_purpose::STANDARD.encode(&buf[..n]);
+                    let encoded = base64::engine::general_purpose::STANDARD.encode(&buf[..n]);
                     let _ = app.emit("pty-output", OutputPayload { id, data: encoded });
                 }
                 Err(_) => break,
             }
         }
+        sessions.lock().remove(&id);
         let _ = app.emit("pty-exit", ExitPayload { id });
     });
 }
@@ -130,12 +147,13 @@ pub fn write_session(
     data: String,
 ) -> Result<(), String> {
     let mut sessions = state.sessions.lock();
-    if let Some(sess) = sessions.get_mut(&id) {
-        sess.writer
-            .write_all(data.as_bytes())
-            .map_err(|e| e.to_string())?;
-        sess.writer.flush().map_err(|e| e.to_string())?;
-    }
+    let sess = sessions
+        .get_mut(&id)
+        .ok_or_else(|| format!("session {id} does not exist"))?;
+    sess.writer
+        .write_all(data.as_bytes())
+        .map_err(|e| e.to_string())?;
+    sess.writer.flush().map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -147,16 +165,17 @@ pub fn resize_session(
     rows: u16,
 ) -> Result<(), String> {
     let sessions = state.sessions.lock();
-    if let Some(sess) = sessions.get(&id) {
-        sess.master
-            .resize(PtySize {
-                rows,
-                cols,
-                pixel_width: 0,
-                pixel_height: 0,
-            })
-            .map_err(|e| e.to_string())?;
-    }
+    let sess = sessions
+        .get(&id)
+        .ok_or_else(|| format!("session {id} does not exist"))?;
+    sess.master
+        .resize(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        })
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
