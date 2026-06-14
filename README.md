@@ -47,6 +47,10 @@ tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromi
   Terminal), each its own session; drag the dividers to resize; layout persists.
 - **SSH manager** — save connections (host/user/port/key) and connect in one
   click; uses the built-in Windows OpenSSH.
+- **Explorer integration** — right-click a folder (or its background / a drive) →
+  **"Open in Abergin"** and the terminal opens already in that directory. Toggle it
+  from the `⌄` menu (writes to `HKCU`, no admin rights needed). If Abergin is
+  already running, it opens a new tab in the existing window.
 - **Select-to-copy** + middle-click paste (Linux convention).
 - **Themes** — 6 built-in (Tokyo Night, Dracula, Gruvbox Dark, Nord, One Dark,
   Solarized Light); they restyle the whole app.

@@ -82,6 +82,7 @@ const I18N = {
     addSsh: "Додати SSH-підключення",
     delete: "Видалити",
     editConfig: "Редагувати config.json",
+    shellIntegration: "Контекстне меню Провідника",
     langSection: "МОВА",
     sshTitle: "Нове SSH-підключення",
     fName: "Назва",
@@ -143,6 +144,7 @@ const I18N = {
     addSsh: "Add SSH connection",
     delete: "Delete",
     editConfig: "Edit config.json",
+    shellIntegration: "Explorer context menu",
     langSection: "LANGUAGE",
     sshTitle: "New SSH connection",
     fName: "Name",
@@ -1832,6 +1834,21 @@ function defaultProfile() {
   );
 }
 
+// Whether the Explorer "Open in Abergin" context-menu entry is registered.
+let explorerIntegration = false;
+
+// Last path segment of a directory — used as the tab title when opened via the
+// Explorer context menu.
+function baseName(p) {
+  const parts = String(p).replace(/[\\/]+$/, "").split(/[\\/]/);
+  return parts[parts.length - 1] || p;
+}
+
+// Open a new tab whose shell starts in `dir` (default profile, folder as title).
+async function openCwdTab(dir) {
+  await createTab({ ...defaultProfile(), cwd: dir }, baseName(dir));
+}
+
 function buildProfileMenu() {
   const menu = document.getElementById("profile-menu");
   menu.innerHTML = "";
@@ -1972,6 +1989,27 @@ function buildProfileMenu() {
     openHelp();
   });
   menu.appendChild(help);
+
+  // ---- Explorer "Open in Abergin" context-menu toggle ----
+  const shellInt = document.createElement("li");
+  shellInt.className = "action";
+  const renderShellInt = () => {
+    shellInt.textContent =
+      (explorerIntegration ? "☑" : "☐") + "  " + tr("shellIntegration");
+  };
+  renderShellInt();
+  shellInt.addEventListener("click", async (e) => {
+    e.stopPropagation(); // keep the menu open so the checkbox state is visible
+    const next = !explorerIntegration;
+    try {
+      await invoke("set_explorer_integration", { enabled: next });
+      explorerIntegration = next;
+      renderShellInt();
+    } catch (error) {
+      console.error("Failed to toggle Explorer integration:", error);
+    }
+  });
+  menu.appendChild(shellInt);
 
   const edit = document.createElement("li");
   edit.className = "action";
@@ -2165,7 +2203,14 @@ async function main() {
     }
   });
 
+  explorerIntegration = await invoke("get_explorer_integration").catch(() => false);
   buildProfileMenu();
+
+  // Explorer "Open in Abergin" on an already-running instance → new tab there.
+  await listen("open-cwd", (e) => {
+    const dir = e.payload;
+    if (dir) openCwdTab(dir).catch(() => {});
+  });
 
   document.getElementById("new-tab").addEventListener("click", () => createTab());
 
@@ -2269,6 +2314,14 @@ async function main() {
   } finally {
     restoringState = false;
   }
+  // Launched from the Explorer context menu? Open (and focus) a tab there.
+  const launchCwd = await invoke("take_launch_cwd").catch(() => null);
+  if (launchCwd) {
+    await openCwdTab(launchCwd).catch((error) =>
+      console.error("Failed to open launch directory:", error),
+    );
+  }
+
   if (tabs.size === 0) {
     await createTab();
   } else {
