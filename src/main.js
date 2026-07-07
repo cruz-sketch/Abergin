@@ -5,6 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
+import { CanvasAddon } from "@xterm/addon-canvas";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -1124,6 +1125,32 @@ function termOptions() {
   };
 }
 
+// Attach a GPU/canvas renderer to a terminal.
+//
+// WebGL is the fastest renderer, but on fractional display scaling (Windows
+// 125%/150% → devicePixelRatio 1.25/1.5) its glyphs drift by sub-pixels: the
+// rounding error eventually jumps a whole pixel, so adjacent characters look
+// glued together and a spurious gap appears elsewhere. Apps that repaint the
+// line rapidly (e.g. Claude Code's input box) make this very visible — it looks
+// like the text shifts by one cell. The Canvas renderer rounds per-cell and
+// stays crisp at fractional DPR, so we prefer it there and keep WebGL only when
+// the DPR is a whole number. Both fall back to xterm's built-in DOM renderer.
+function loadRenderer(term) {
+  if (Number.isInteger(window.devicePixelRatio)) {
+    try {
+      term.loadAddon(new WebglAddon());
+      return;
+    } catch {
+      // WebGL unavailable (no GPU / context lost) — try Canvas next.
+    }
+  }
+  try {
+    term.loadAddon(new CanvasAddon());
+  } catch {
+    // Neither GPU renderer available — xterm falls back to the DOM renderer.
+  }
+}
+
 // Create one pane: a terminal element + backend PTY session, wrapped in a Leaf.
 async function makeLeaf(tab, profile) {
   const el = document.createElement("div");
@@ -1135,11 +1162,7 @@ async function makeLeaf(tab, profile) {
   term.loadAddon(fit);
   term.loadAddon(new WebLinksAddon());
   term.open(el);
-  try {
-    term.loadAddon(new WebglAddon());
-  } catch {
-    // WebGL unavailable — xterm falls back to the DOM renderer.
-  }
+  loadRenderer(term);
   try {
     fit.fit();
   } catch {}
