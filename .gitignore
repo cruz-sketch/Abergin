@@ -8,3 +8,4 @@ app-icon.png
 src-tauri/tauri.signing.conf.json
 src-tauri/target/
 src-tauri/gen/schemas/
+.claude/settings.local.json

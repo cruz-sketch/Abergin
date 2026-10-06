@@ -10,13 +10,15 @@
     <header id="titlebar" data-tauri-drag-region>
       <div class="tb-left" data-tauri-drag-region>
         <span class="tb-logo" data-tauri-drag-region>▌</span>
-        <nav id="tabs"></nav>
+        <nav id="tabs" role="tablist" aria-label="Terminal tabs"></nav>
         <button id="new-tab" class="tb-icon" title="Нова вкладка (Ctrl+Shift+T)">+</button>
       </div>
 
       <div class="tb-right">
         <div class="profile-switch">
-          <button id="profile-btn" class="tb-icon" title="Профілі">⌄</button>
+          <button id="profile-btn" class="tb-icon menu-trigger" type="button" title="Меню" aria-label="Меню" aria-haspopup="menu" aria-controls="profile-menu" aria-expanded="false">
+            <span class="menu-glyph" aria-hidden="true"><span></span><span></span><span></span></span>
+          </button>
           <ul id="profile-menu" class="hidden"></ul>
         </div>
         <button id="win-min" class="win-btn" title="Згорнути">&#xE921;</button>
@@ -27,6 +29,7 @@
 
     <!-- Terminal panes get mounted here, one per tab -->
     <main id="panes"></main>
+    <div id="error-notices" aria-live="assertive"></div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -129,6 +129,7 @@ fn default_config() -> Value {
         "fontSize": 13,
         "scrollback": 10000,
         "copyOnSelect": true,
+        "renderer": "dom",
         "theme": {
             "foreground": "#c0caf5",
             "background": "#1a1b26",

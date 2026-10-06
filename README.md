@@ -37,23 +37,27 @@ tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromi
 ## Features
 
 - **Profiles** — auto-detects PowerShell, PowerShell 7, Git Bash, WSL, Command
-  Prompt. Stored in `%APPDATA%\com.abergin.terminal\config.json` (editable from the `⌄` menu).
+  Prompt. Stored in `%APPDATA%\com.abergin.terminal\config.json` (editable from the title bar menu).
 - **Bash keybindings** — PowerShell launches in `EditMode Emacs`, so `Ctrl+W`,
   `Ctrl+A/E`, `Ctrl+U/K`, `Ctrl+R` (history search), `Alt+B/F` work. Native in Git Bash / WSL.
 - **Command history** — at the shell level (PSReadLine/readline) + 10 000-line scrollback.
 - **Tabs** — multiple sessions, rename (double-click / menu), **drag-and-drop**
-  reordering. Restored between launches.
+  reordering. Tabs, their active panes and launch directories are restored between launches.
+  PowerShell, Git Bash, Command Prompt and WSL report directory changes, so a
+  tab reopened after `cd` starts there.
 - **Split panes** — a tab splits into a tree of panes (like tmux / Windows
   Terminal), each its own session; drag the dividers to resize; layout persists.
-- **SSH manager** — save connections (host/user/port/key) and connect in one
+- **SSH manager** — save and edit connections (host/user/port/key) and connect in one
   click; uses the built-in Windows OpenSSH.
 - **Explorer integration** — right-click a folder (or its background / a drive) →
   **"Open in Abergin"** and the terminal opens already in that directory. Toggle it
-  from the `⌄` menu (writes to `HKCU`, no admin rights needed). If Abergin is
+  from the title bar menu (writes to `HKCU`, no admin rights needed). If Abergin is
   already running, it opens a new tab in the existing window.
 - **Select-to-copy** + middle-click paste (Linux convention).
 - **Themes** — 6 built-in (Tokyo Night, Dracula, Gruvbox Dark, Nord, One Dark,
   Solarized Light); they restyle the whole app.
+- **Rendering** — the DOM renderer is the default for stable text in rapidly
+  repainted terminal apps. Set `"renderer": "webgl"` in `config.json` to opt in to GPU rendering.
 - **Text zoom** — `Ctrl +/-/0` or `Ctrl`+wheel.
 - **14 languages** — Ukrainian, English, Deutsch, Français, Español, Polski,
   Čeština, Lietuvių, Latviešu, Eesti, Norsk, Română (Moldova), Azərbaycan, 日本語.
@@ -84,6 +88,7 @@ tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromi
 
 ```powershell
 npm install
+npm test               # session restoration tests
 npm run tauri dev      # dev mode (Vite + Rust, opens a window)
 npm run tauri build    # installer → src-tauri\target\release\bundle\nsis\
 ```
@@ -122,8 +127,8 @@ Release. To cut one, bump the version in `package.json`, `src-tauri/Cargo.toml` 
 `src-tauri/tauri.conf.json`, then:
 
 ```powershell
-git tag v0.1.0
-git push github v0.1.0
+git tag vX.Y.Z
+git push github vX.Y.Z
 ```
 
 Review the draft release on GitHub and publish it.
@@ -132,8 +137,8 @@ Review the draft release on GitHub and publish it.
 
 `%APPDATA%\com.abergin.terminal\`
 - `config.json` — profiles, font, base theme.
-- `state.json` — open tabs + pane layout, SSH connections, language, current
-  theme, font size.
+- `state.json` — open tabs, pane layout and directories, active tab/pane, SSH
+  connections, language, current theme, font size.
 
 ## Project layout
 

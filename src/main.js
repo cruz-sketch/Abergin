@@ -5,7 +5,8 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
-import { CanvasAddon } from "@xterm/addon-canvas";
+import pkg from "../package.json";
+import { cwdFromCmdOsc, cwdFromOsc7, cwdFromWslOsc, restoreProfile, serializeProfile, sessionArgs, sshProfile } from "./session-profile.js";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -18,9 +19,8 @@ import {
 const appWindow = getCurrentWindow();
 
 // ---------------------------------------------------------------------------
-// Localization (i18n). Five languages; the chosen locale is persisted in
-// state.json. Default: Ukrainian. `tr()` is named to avoid the `t` tab-object
-// variable used elsewhere.
+// Localization (i18n). The chosen locale is persisted in state.json; first
+// launch follows the OS language and falls back to English.
 // ---------------------------------------------------------------------------
 const LANGUAGES = [
   { code: "uk", label: "Українська" },
@@ -97,7 +97,7 @@ const I18N = {
     phHost: "192.168.0.10 або example.com",
     processExited: "процес завершено",
     tipNewTab: "Нова вкладка (Ctrl+Shift+T)",
-    tipProfiles: "Профілі",
+    tipMenu: "Меню",
     tipMin: "Згорнути",
     tipMax: "Розгорнути",
     tipClose: "Закрити",
@@ -159,7 +159,7 @@ const I18N = {
     phHost: "192.168.0.10 or example.com",
     processExited: "process exited",
     tipNewTab: "New tab (Ctrl+Shift+T)",
-    tipProfiles: "Profiles",
+    tipMenu: "Menu",
     tipMin: "Minimize",
     tipMax: "Maximize",
     tipClose: "Close",
@@ -220,7 +220,7 @@ const I18N = {
     phHost: "192.168.0.10 oder example.com",
     processExited: "Prozess beendet",
     tipNewTab: "Neuer Tab (Ctrl+Shift+T)",
-    tipProfiles: "Profile",
+    tipMenu: "Menü",
     tipMin: "Minimieren",
     tipMax: "Maximieren",
     tipClose: "Schließen",
@@ -281,7 +281,7 @@ const I18N = {
     phHost: "192.168.0.10 ou example.com",
     processExited: "processus terminé",
     tipNewTab: "Nouvel onglet (Ctrl+Shift+T)",
-    tipProfiles: "Profils",
+    tipMenu: "Menu",
     tipMin: "Réduire",
     tipMax: "Agrandir",
     tipClose: "Fermer",
@@ -342,7 +342,7 @@ const I18N = {
     phHost: "192.168.0.10 o example.com",
     processExited: "proceso finalizado",
     tipNewTab: "Nueva pestaña (Ctrl+Shift+T)",
-    tipProfiles: "Perfiles",
+    tipMenu: "Menú",
     tipMin: "Minimizar",
     tipMax: "Maximizar",
     tipClose: "Cerrar",
@@ -402,7 +402,7 @@ const I18N = {
     phHost: "192.168.0.10 lub example.com",
     processExited: "proces zakończony",
     tipNewTab: "Nowa karta (Ctrl+Shift+T)",
-    tipProfiles: "Profile",
+    tipMenu: "Menu",
     tipMin: "Minimalizuj",
     tipMax: "Maksymalizuj",
     tipClose: "Zamknij",
@@ -462,7 +462,7 @@ const I18N = {
     phHost: "192.168.0.10 nebo example.com",
     processExited: "proces ukončen",
     tipNewTab: "Nová karta (Ctrl+Shift+T)",
-    tipProfiles: "Profily",
+    tipMenu: "Nabídka",
     tipMin: "Minimalizovat",
     tipMax: "Maximalizovat",
     tipClose: "Zavřít",
@@ -522,7 +522,7 @@ const I18N = {
     phHost: "192.168.0.10 arba example.com",
     processExited: "procesas baigtas",
     tipNewTab: "Nauja kortelė (Ctrl+Shift+T)",
-    tipProfiles: "Profiliai",
+    tipMenu: "Meniu",
     tipMin: "Sumažinti",
     tipMax: "Išskleisti",
     tipClose: "Uždaryti",
@@ -582,7 +582,7 @@ const I18N = {
     phHost: "192.168.0.10 vai example.com",
     processExited: "process pabeigts",
     tipNewTab: "Jauna cilne (Ctrl+Shift+T)",
-    tipProfiles: "Profili",
+    tipMenu: "Izvēlne",
     tipMin: "Minimizēt",
     tipMax: "Maksimizēt",
     tipClose: "Aizvērt",
@@ -642,7 +642,7 @@ const I18N = {
     phHost: "192.168.0.10 või example.com",
     processExited: "protsess lõpetatud",
     tipNewTab: "Uus kaart (Ctrl+Shift+T)",
-    tipProfiles: "Profiilid",
+    tipMenu: "Menüü",
     tipMin: "Minimeeri",
     tipMax: "Maksimeeri",
     tipClose: "Sulge",
@@ -702,7 +702,7 @@ const I18N = {
     phHost: "192.168.0.10 eller example.com",
     processExited: "prosess avsluttet",
     tipNewTab: "Ny fane (Ctrl+Shift+T)",
-    tipProfiles: "Profiler",
+    tipMenu: "Meny",
     tipMin: "Minimer",
     tipMax: "Maksimer",
     tipClose: "Lukk",
@@ -762,7 +762,7 @@ const I18N = {
     phHost: "192.168.0.10 sau example.com",
     processExited: "proces încheiat",
     tipNewTab: "Filă nouă (Ctrl+Shift+T)",
-    tipProfiles: "Profiluri",
+    tipMenu: "Meniu",
     tipMin: "Minimizează",
     tipMax: "Maximizează",
     tipClose: "Închide",
@@ -822,7 +822,7 @@ const I18N = {
     phHost: "192.168.0.10 və ya example.com",
     processExited: "proses bitdi",
     tipNewTab: "Yeni tab (Ctrl+Shift+T)",
-    tipProfiles: "Profillər",
+    tipMenu: "Menyu",
     tipMin: "Kiçilt",
     tipMax: "Böyüt",
     tipClose: "Bağla",
@@ -882,7 +882,7 @@ const I18N = {
     phHost: "192.168.0.10 または example.com",
     processExited: "プロセスが終了しました",
     tipNewTab: "新しいタブ (Ctrl+Shift+T)",
-    tipProfiles: "プロファイル",
+    tipMenu: "メニュー",
     tipMin: "最小化",
     tipMax: "最大化",
     tipClose: "閉じる",
@@ -890,6 +890,27 @@ const I18N = {
 };
 
 let locale = "en";
+
+const SSH_FORM_TEXT = {
+  uk: { edit: "Редагувати SSH-підключення", action: "Редагувати", host: "Вкажіть хост без пробілів і дефіса на початку.", port: "Вкажіть порт від 1 до 65535." },
+  en: { edit: "Edit SSH connection", action: "Edit", host: "Enter a host without spaces or a leading dash.", port: "Enter a port from 1 to 65535." },
+  de: { edit: "SSH-Verbindung bearbeiten", action: "Bearbeiten", host: "Host ohne Leerzeichen oder führenden Bindestrich eingeben.", port: "Port zwischen 1 und 65535 eingeben." },
+  fr: { edit: "Modifier la connexion SSH", action: "Modifier", host: "Saisissez un hôte sans espace ni tiret initial.", port: "Saisissez un port entre 1 et 65535." },
+  es: { edit: "Editar conexión SSH", action: "Editar", host: "Introduce un host sin espacios ni guion inicial.", port: "Introduce un puerto entre 1 y 65535." },
+  pl: { edit: "Edytuj połączenie SSH", action: "Edytuj", host: "Podaj host bez spacji i początkowego łącznika.", port: "Podaj port od 1 do 65535." },
+  cs: { edit: "Upravit připojení SSH", action: "Upravit", host: "Zadejte hostitele bez mezer a úvodní pomlčky.", port: "Zadejte port od 1 do 65535." },
+  lt: { edit: "Redaguoti SSH ryšį", action: "Redaguoti", host: "Įveskite serverį be tarpų ir pradinio brūkšnelio.", port: "Įveskite prievadą nuo 1 iki 65535." },
+  lv: { edit: "Rediģēt SSH savienojumu", action: "Rediģēt", host: "Ievadiet resursdatoru bez atstarpēm un sākuma defises.", port: "Ievadiet portu no 1 līdz 65535." },
+  et: { edit: "Muuda SSH-ühendust", action: "Muuda", host: "Sisesta host ilma tühikute ja alguskriipsuta.", port: "Sisesta port vahemikus 1 kuni 65535." },
+  no: { edit: "Rediger SSH-tilkobling", action: "Rediger", host: "Skriv inn vert uten mellomrom eller innledende bindestrek.", port: "Skriv inn en port fra 1 til 65535." },
+  ro: { edit: "Editează conexiunea SSH", action: "Editează", host: "Introdu un host fără spații sau cratimă la început.", port: "Introdu un port între 1 și 65535." },
+  az: { edit: "SSH bağlantısını redaktə et", action: "Redaktə et", host: "Boşluqsuz və başlanğıc tiresiz host daxil edin.", port: "1-dən 65535-ə qədər port daxil edin." },
+  ja: { edit: "SSH 接続を編集", action: "編集", host: "空白や先頭のハイフンを含まないホストを入力してください。", port: "1～65535 のポートを入力してください。" },
+};
+
+function sshText(key) {
+  return SSH_FORM_TEXT[locale]?.[key] ?? SSH_FORM_TEXT.en[key];
+}
 
 function tr(key) {
   return I18N[locale]?.[key] ?? I18N.en[key] ?? key;
@@ -915,13 +936,20 @@ function applyI18n() {
   document.documentElement.lang = locale;
   const setTitle = (id, key) => {
     const el = document.getElementById(id);
-    if (el) el.title = tr(key);
+    if (el) {
+      el.title = tr(key);
+      el.setAttribute("aria-label", tr(key));
+    }
   };
   setTitle("new-tab", "tipNewTab");
-  setTitle("profile-btn", "tipProfiles");
+  setTitle("profile-btn", "tipMenu");
   setTitle("win-min", "tipMin");
   setTitle("win-max", "tipMax");
   setTitle("win-close", "tipClose");
+  for (const close of document.querySelectorAll(".tab .close")) {
+    close.title = tr("closeTab");
+    close.setAttribute("aria-label", tr("closeTab"));
+  }
 }
 
 function setLocale(code) {
@@ -998,9 +1026,46 @@ const THEMES = {
   },
 };
 
+// Keep the light theme's primary text legible on both terminal and menus.
+THEMES["solarized-light"].ui.fg = "#52666d";
+THEMES["solarized-light"].term.foreground = "#52666d";
+
 let themeId = "tokyo-night";
 let currentTheme = THEMES["tokyo-night"];
 let fontSize = 13;
+let baseThemeCustomized = false;
+
+function mixColor(first, second, weight) {
+  const hex = (value) => value.match(/[0-9a-f]{2}/gi).map((part) => parseInt(part, 16));
+  const a = hex(first);
+  const b = hex(second);
+  return `#${a.map((channel, index) => Math.round(channel * (1 - weight) + b[index] * weight).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function configureBaseTheme() {
+  if (!config.theme || typeof config.theme !== "object") return;
+  const original = THEMES["tokyo-night"];
+  const term = { ...original.term };
+  for (const key of Object.keys(term)) {
+    if (typeof config.theme[key] === "string" && /^#[0-9a-f]{6}$/i.test(config.theme[key])) {
+      term[key] = config.theme[key];
+    }
+  }
+  baseThemeCustomized = Object.keys(term).some((key) => term[key] !== original.term[key]);
+  if (!baseThemeCustomized) return;
+  const ui = {
+    ...original.ui,
+    bg: term.background,
+    fg: term.foreground,
+    bgElev: mixColor(term.background, term.foreground, 0.05),
+    tabActive: mixColor(term.background, term.foreground, 0.09),
+    border: mixColor(term.background, term.foreground, 0.16),
+    accent: term.blue,
+    accent2: term.magenta,
+    danger: term.red,
+  };
+  THEMES["tokyo-night"] = { ...original, term, ui };
+}
 
 function applyTheme(theme) {
   currentTheme = theme;
@@ -1009,7 +1074,15 @@ function applyTheme(theme) {
   r.setProperty("--bg", u.bg);
   r.setProperty("--bg-elev", u.bgElev);
   r.setProperty("--fg", u.fg);
-  r.setProperty("--muted", u.muted);
+  const readableMuted = {
+    "tokyo-night": "#929cc8",
+    dracula: "#a8b2d8",
+    "gruvbox-dark": "#b8aa8a",
+    nord: "#a5b3c8",
+    "one-dark": "#9ba6b7",
+    "solarized-light": "#52666d",
+  };
+  r.setProperty("--muted", baseThemeCustomized && themeId === "tokyo-night" ? u.fg : readableMuted[themeId] ?? u.muted);
   r.setProperty("--accent", u.accent);
   r.setProperty("--accent-2", u.accent2);
   r.setProperty("--border", u.border);
@@ -1045,6 +1118,7 @@ const tabs = new Map(); // tabId   -> Tab
 const leaves = new Map(); // sessionId -> Leaf (for PTY output dispatch)
 let activeTabId = null;
 let tabSeq = 0;
+let pendingTabFocus = null;
 let restoringState = false;
 
 let sshConnections = []; // [{ name, host, user, port, key }]
@@ -1052,6 +1126,16 @@ let sshPath = "ssh"; // resolved by the backend
 
 const $tabs = document.getElementById("tabs");
 const $panes = document.getElementById("panes");
+
+function showError(error) {
+  console.error(error);
+  const notice = document.createElement("div");
+  notice.className = "error-notice";
+  notice.setAttribute("role", "alert");
+  notice.textContent = String(error);
+  document.getElementById("error-notices")?.appendChild(notice);
+  setTimeout(() => notice.remove(), 8000);
+}
 
 // ---- tree helpers ----
 function leavesOf(node, acc = []) {
@@ -1076,30 +1160,80 @@ function activeLeaf() {
 }
 
 function serializeNode(node) {
-  if (node.type === "leaf") return { type: "leaf", profile: node.leaf.profile.name };
+  if (node.type === "leaf") {
+    return { type: "leaf", profile: serializeProfile(node.leaf.profile) };
+  }
   return {
     type: "split",
     dir: node.dir,
-    sizes: node.sizes,
+    sizes: [...node.sizes],
     a: serializeNode(node.a),
     b: serializeNode(node.b),
   };
 }
 
+function panePath(node, target) {
+  if (!node || !target) return null;
+  if (node === target) return "";
+  if (node.type === "leaf") return null;
+  const left = panePath(node.a, target);
+  if (left !== null) return `a${left}`;
+  const right = panePath(node.b, target);
+  return right === null ? null : `b${right}`;
+}
+
+function leafAtPath(root, path) {
+  let node = root;
+  for (const direction of String(path ?? "")) {
+    if (node.type !== "split" || (direction !== "a" && direction !== "b")) {
+      return firstLeaf(root);
+    }
+    node = node[direction];
+  }
+  return node.type === "leaf" ? node.leaf : firstLeaf(node);
+}
+
 // Persist open tabs + their pane layout (so renamed tabs and splits survive a
 // restart), SSH connections, and the chosen language.
+let saveTimer = null;
+let saveChain = Promise.resolve();
+
+function stateSnapshot() {
+  const liveTabs = [...tabs.values()].filter((t) => t.root);
+  const tabsArr = liveTabs.map((t) => ({
+      name: t.customName ?? null,
+      profile: serializeProfile(t.profile),
+      layout: serializeNode(t.root),
+      activePane: panePath(t.root, t.activeLeaf?.node),
+    }));
+  return {
+    tabs: tabsArr,
+    activeTab: liveTabs.findIndex((tab) => tab.id === activeTabId),
+    ssh: sshConnections.map((connection) => ({ ...connection })),
+    locale,
+    theme: themeId,
+    fontSize,
+  };
+}
+
+function flushState() {
+  if (saveTimer !== null) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (restoringState) return saveChain;
+  const state = stateSnapshot();
+  saveChain = saveChain.catch(() => {}).then(() => invoke("save_state", { state }));
+  return saveChain.catch((error) => {
+    console.error("Failed to save state:", error);
+    showError(error);
+  });
+}
+
 function persistState() {
   if (restoringState) return;
-  const tabsArr = [...tabs.values()]
-    .filter((t) => t.root)
-    .map((t) => ({
-      name: t.customName ?? null,
-      profile: t.profile.name,
-      layout: serializeNode(t.root),
-    }));
-  invoke("save_state", {
-    state: { tabs: tabsArr, ssh: sshConnections, locale, theme: themeId, fontSize },
-  }).catch((error) => console.error("Failed to save state:", error));
+  if (saveTimer !== null) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushState, 120);
 }
 
 function b64ToBytes(b64) {
@@ -1125,29 +1259,24 @@ function termOptions() {
   };
 }
 
-// Attach a GPU/canvas renderer to a terminal.
+// Attach a renderer to a terminal.
 //
-// WebGL is the fastest renderer, but on fractional display scaling (Windows
-// 125%/150% → devicePixelRatio 1.25/1.5) its glyphs drift by sub-pixels: the
-// rounding error eventually jumps a whole pixel, so adjacent characters look
-// glued together and a spurious gap appears elsewhere. Apps that repaint the
-// line rapidly (e.g. Claude Code's input box) make this very visible — it looks
-// like the text shifts by one cell. The Canvas renderer rounds per-cell and
-// stays crisp at fractional DPR, so we prefer it there and keep WebGL only when
-// the DPR is a whole number. Both fall back to xterm's built-in DOM renderer.
+// GPU renderers (WebGL, Canvas) pre-render glyphs into a fixed-size texture
+// atlas. At fractional display scaling (Windows 125%/150% → devicePixelRatio
+// 1.25/1.5) the rounded cell width drifts by sub-pixels; the error eventually
+// jumps a whole pixel, so characters glue together or a whole line looks
+// shifted by one cell. It's very visible in UIs that repaint a line rapidly
+// (e.g. Claude Code's input box) and Canvas only makes it rarer, not gone.
+// xterm's built-in DOM renderer instead lays out live browser text, which stays
+// sub-pixel accurate. WebGL remains an explicit config opt-in at integer DPR.
 function loadRenderer(term) {
-  if (Number.isInteger(window.devicePixelRatio)) {
-    try {
-      term.loadAddon(new WebglAddon());
-      return;
-    } catch {
-      // WebGL unavailable (no GPU / context lost) — try Canvas next.
-    }
-  }
+  if (config.renderer !== "webgl" || !Number.isInteger(window.devicePixelRatio)) return;
   try {
-    term.loadAddon(new CanvasAddon());
+    const addon = new WebglAddon();
+    addon.onContextLoss(() => addon.dispose());
+    term.loadAddon(addon);
   } catch {
-    // Neither GPU renderer available — xterm falls back to the DOM renderer.
+    // WebGL unavailable (no GPU / context lost) — xterm falls back to DOM.
   }
 }
 
@@ -1173,7 +1302,7 @@ async function makeLeaf(tab, profile) {
       profile: {
         name: profile.name,
         shell: profile.shell,
-        args: profile.args ?? [],
+        args: sessionArgs(profile),
         cwd: profile.cwd ?? null,
       },
       cols: term.cols || 80,
@@ -1185,10 +1314,51 @@ async function makeLeaf(tab, profile) {
     throw error;
   }
 
-  const leaf = { sessionId, term, fit, el, profile, tab, node: null, ro: null };
+  const leaf = {
+    sessionId,
+    term,
+    fit,
+    el,
+    profile,
+    tab,
+    node: null,
+    ro: null,
+    inputBuffer: "",
+    inputRunning: false,
+    resizePending: null,
+    resizeRunning: false,
+    resizeErrorShown: false,
+    closed: false,
+    // Last grid size sent to the PTY, so we can skip redundant resizes.
+    lastCols: term.cols,
+    lastRows: term.rows,
+  };
   leaf.node = { type: "leaf", leaf, parent: null };
   el._leaf = leaf;
   leaves.set(sessionId, leaf);
+  const updateCwd = (cwd) => {
+    if (cwd && cwd !== leaf.profile.cwd) {
+      leaf.profile = { ...leaf.profile, cwd };
+      if (!tab.root || tab.activeLeaf === leaf || leavesOf(tab.root).length === 1) {
+        tab.profile = leaf.profile;
+      }
+      persistState();
+    }
+  };
+  term.parser.registerOscHandler(7, (value) => {
+    if (leaf.profile.kind !== "ssh") {
+      updateCwd(cwdFromOsc7(value, /(?:^|[\\/])wsl(?:\.exe)?$/i.test(leaf.profile.shell)));
+    }
+    return true;
+  });
+  term.parser.registerOscHandler(777, (value) => {
+    if (leaf.profile.kind !== "ssh" && /(?:^|[\\/])cmd(?:\.exe)?$/i.test(leaf.profile.shell)) {
+      updateCwd(cwdFromCmdOsc(value));
+    } else if (leaf.profile.kind !== "ssh" && /(?:^|[\\/])wsl(?:\.exe)?$/i.test(leaf.profile.shell)) {
+      updateCwd(cwdFromWslOsc(value));
+    }
+    return true;
+  });
 
   try {
     await invoke("attach_session", { id: sessionId });
@@ -1200,7 +1370,7 @@ async function makeLeaf(tab, profile) {
     throw error;
   }
 
-  term.onData((data) => invoke("write_session", { id: sessionId, data }).catch(() => {}));
+  term.onData((data) => enqueueInput(leaf, data));
   if (config.copyOnSelect) {
     term.onSelectionChange(() => {
       const sel = term.getSelection();
@@ -1212,19 +1382,16 @@ async function makeLeaf(tab, profile) {
 
   leaf.ro = new ResizeObserver(() => {
     if (leaf.tab.id !== activeTabId) return;
-    if (!el.clientHeight || !el.clientWidth) return;
-    try {
-      fit.fit();
-      invoke("resize_session", { id: sessionId, cols: term.cols, rows: term.rows });
-    } catch {}
+    syncLeafSize(leaf);
   });
   leaf.ro.observe(el);
   return leaf;
 }
 
-async function createTab(profile, customName, layoutSpec) {
+async function createTab(profile, customName, layoutSpec, activePane) {
   profile = profile || defaultProfile();
   const id = ++tabSeq;
+  pendingTabFocus = id;
 
   const container = document.createElement("div");
   // Let xterm measure the real pane size before its PTY starts producing output.
@@ -1264,13 +1431,21 @@ async function createTab(profile, customName, layoutSpec) {
     tab.container.remove();
     tab.tabEl.remove();
     tabs.delete(id);
+    if (pendingTabFocus === id) pendingTabFocus = null;
     throw error;
   }
-  tab.activeLeaf = firstLeaf(tab.root);
+  if (!tabs.has(id) || tab.closing) {
+    for (const leaf of [...leaves.values()].filter((candidate) => candidate.tab === tab)) {
+      await disposeLeaf(leaf);
+    }
+    return null;
+  }
+  tab.activeLeaf = leafAtPath(tab.root, activePane);
+  tab.profile = tab.activeLeaf.profile;
 
   renderTab(tab);
   tab.container.classList.remove("measuring");
-  activate(id);
+  if (pendingTabFocus === id) activate(id, true);
   persistState();
   return id;
 }
@@ -1295,7 +1470,7 @@ async function buildNode(tab, spec, parent) {
     return node;
   }
   const prof =
-    config.profiles.find((p) => p.name === spec.profile) || tab.profile || defaultProfile();
+    restoreProfile(spec?.profile, config.profiles, sshConnections, sshPath, tab.profile || defaultProfile());
   const leaf = await makeLeaf(tab, prof);
   leaf.node.parent = parent;
   return leaf.node;
@@ -1340,6 +1515,7 @@ function attachResizer(sp, node, aEl, bEl) {
     const ra = aEl.getBoundingClientRect();
     const rb = bEl.getBoundingClientRect();
     const totalPx = horizontal ? ra.width + rb.width : ra.height + rb.height;
+    if (totalPx <= 0) return;
     const startPos = horizontal ? e.clientX : e.clientY;
     const startA = horizontal ? ra.width : ra.height;
     const totalGrow = node.sizes[0] + node.sizes[1];
@@ -1347,7 +1523,8 @@ function attachResizer(sp, node, aEl, bEl) {
     const onMove = (ev) => {
       const pos = horizontal ? ev.clientX : ev.clientY;
       let aPx = startA + (pos - startPos);
-      aPx = Math.max(40, Math.min(totalPx - 40, aPx));
+      const minimum = Math.min(40, totalPx / 2);
+      aPx = Math.max(minimum, Math.min(totalPx - minimum, aPx));
       const aGrow = (aPx / totalPx) * totalGrow;
       node.sizes = [aGrow, totalGrow - aGrow];
       aEl.style.flex = `${node.sizes[0]} 1 0`;
@@ -1366,10 +1543,36 @@ function attachResizer(sp, node, aEl, bEl) {
 }
 
 // ---- split / close / focus ----
+function disposeLeaf(leaf, closeSession = true) {
+  leaf.closed = true;
+  leaf.ro?.disconnect();
+  leaves.delete(leaf.sessionId);
+  leaf.term.dispose();
+  leaf.el.remove();
+  if (closeSession) {
+    return invoke("close_session", { id: leaf.sessionId }).catch(() => {});
+  }
+  return Promise.resolve();
+}
+
 async function splitLeaf(leaf, dir) {
+  if (leaf.splitting || leaf.closed) return;
+  leaf.splitting = true;
   const tab = leaf.tab;
   const oldNode = leaf.node;
-  const newLeaf = await makeLeaf(tab, leaf.profile);
+  let newLeaf;
+  try {
+    newLeaf = await makeLeaf(tab, leaf.profile);
+  } catch (error) {
+    showError(error);
+    leaf.splitting = false;
+    return;
+  }
+  if (!tabs.has(tab.id) || tab.closing || leaf.closed || leaf.closing || panePath(tab.root, oldNode) === null) {
+    disposeLeaf(newLeaf);
+    leaf.splitting = false;
+    return;
+  }
   const split = {
     type: "split",
     dir,
@@ -1385,21 +1588,25 @@ async function splitLeaf(leaf, dir) {
   else replaceChild(split.parent, oldNode, split);
 
   renderTab(tab);
-  setActiveLeaf(newLeaf);
-  newLeaf.term.focus();
+  tab.activeLeaf = newLeaf;
+  tab.profile = newLeaf.profile;
+  updateLeafFocus(tab);
+  if (activeTabId === tab.id) newLeaf.term.focus();
+  leaf.splitting = false;
   persistState();
 }
 
 async function closeLeaf(leaf) {
+  if (leaf.closed || leaf.closing) return;
+  leaf.closing = true;
   const tab = leaf.tab;
   if (leavesOf(tab.root).length <= 1) {
-    closeTab(tab.id);
+    await closeTab(tab.id);
     return;
   }
   await invoke("close_session", { id: leaf.sessionId }).catch(() => {});
-  leaf.ro?.disconnect();
-  leaf.term.dispose();
-  leaves.delete(leaf.sessionId);
+  if (!tabs.has(tab.id) || panePath(tab.root, leaf.node) === null) return;
+  disposeLeaf(leaf, false);
 
   const node = leaf.node;
   const parent = node.parent;
@@ -1409,17 +1616,20 @@ async function closeLeaf(leaf) {
   else replaceChild(parent.parent, parent, sibling);
 
   tab.activeLeaf = firstLeaf(tab.root);
+  tab.profile = tab.activeLeaf.profile;
   renderTab(tab);
-  setActiveLeaf(tab.activeLeaf);
-  tab.activeLeaf.term.focus();
+  updateLeafFocus(tab);
+  if (activeTabId === tab.id) tab.activeLeaf.term.focus();
   persistState();
 }
 
 function setActiveLeaf(leaf) {
   const tab = leaf.tab;
   tab.activeLeaf = leaf;
-  activeTabId = tab.id;
+  tab.profile = leaf.profile;
+  if (tab.id !== activeTabId) return;
   updateLeafFocus(tab);
+  persistState();
 }
 
 function updateLeafFocus(tab) {
@@ -1457,14 +1667,76 @@ function focusDir(dir) {
   }
 }
 
-function fitTab(tab) {
-  for (const lf of leavesOf(tab.root)) {
-    if (!lf.el.clientHeight || !lf.el.clientWidth) continue;
+// Fit one leaf to its element; only tell the PTY when the grid actually changed.
+// A redundant ConPTY resize (which would otherwise fire on every tab switch)
+// makes it re-render its screen buffer, and full-screen TUIs like Claude Code
+// drop a cell when that happens. The client-side refresh() is safe — it just
+// repaints xterm's existing buffer, fixing a stale frame left by a hidden pane.
+function enqueueInput(leaf, data) {
+  if (leaf.closed || (!data && !leaf.inputBuffer)) return;
+  leaf.inputBuffer += data;
+  if (leaf.inputRunning) return;
+  leaf.inputRunning = true;
+  queueMicrotask(async () => {
     try {
-      lf.fit.fit();
-      invoke("resize_session", { id: lf.sessionId, cols: lf.term.cols, rows: lf.term.rows });
-    } catch {}
+      while (leaf.inputBuffer && !leaf.closed) {
+        const chunk = leaf.inputBuffer;
+        leaf.inputBuffer = "";
+        await invoke("write_session", { id: leaf.sessionId, data: chunk });
+      }
+    } catch (error) {
+      leaf.inputBuffer = "";
+      showError(error);
+    } finally {
+      leaf.inputRunning = false;
+      if (leaf.inputBuffer && !leaf.closed) enqueueInput(leaf, "");
+    }
+  });
+}
+
+async function sendResize(leaf) {
+  if (leaf.resizeRunning || leaf.closed) return;
+  leaf.resizeRunning = true;
+  try {
+    while (leaf.resizePending && !leaf.closed) {
+      const size = leaf.resizePending;
+      leaf.resizePending = null;
+      if (size.cols === leaf.lastCols && size.rows === leaf.lastRows) continue;
+      await invoke("resize_session", { id: leaf.sessionId, ...size });
+      leaf.lastCols = size.cols;
+      leaf.lastRows = size.rows;
+      leaf.resizeErrorShown = false;
+    }
+  } catch (error) {
+    if (!leaf.resizeErrorShown) showError(error);
+    leaf.resizeErrorShown = true;
+    // Retry on the next size or visibility event.
+  } finally {
+    leaf.resizeRunning = false;
+    if (leaf.resizePending && !leaf.closed) sendResize(leaf);
   }
+}
+
+function syncLeafSize(leaf) {
+  if (leaf.closed || !leaf.el.clientHeight || !leaf.el.clientWidth) return;
+  try {
+    const proposed = leaf.fit.proposeDimensions();
+    if (!proposed || proposed.cols < 2 || proposed.rows < 1) return;
+    if (proposed.cols !== leaf.term.cols || proposed.rows !== leaf.term.rows) {
+      leaf.fit.fit();
+    }
+    const { cols, rows } = leaf.term;
+    if (cols !== leaf.lastCols || rows !== leaf.lastRows) {
+      leaf.resizePending = { cols, rows };
+      sendResize(leaf);
+    }
+  } catch (error) {
+    console.error("Failed to fit terminal:", error);
+  }
+}
+
+function fitTab(tab) {
+  for (const lf of leavesOf(tab.root)) syncLeafSize(lf);
 }
 
 // Re-fit the visible tab. Called on window resize and on display-scale (DPR)
@@ -1475,9 +1747,12 @@ function refitAll() {
 }
 
 function buildTabButton(id, profile) {
-  const el = document.createElement("button");
+  const el = document.createElement("div");
   el.className = "tab";
   el.dataset.id = id;
+  el.setAttribute("role", "tab");
+  el.setAttribute("aria-selected", "false");
+  el.tabIndex = 0;
 
   const dot = document.createElement("span");
   dot.className = "dot";
@@ -1487,16 +1762,29 @@ function buildTabButton(id, profile) {
   label.className = "label";
   label.textContent = profile.name;
 
-  const close = document.createElement("span");
+  const close = document.createElement("button");
   close.className = "close";
+  close.type = "button";
   close.textContent = "✕";
+  close.title = tr("closeTab");
+  close.setAttribute("aria-label", tr("closeTab"));
   close.addEventListener("click", (ev) => {
     ev.stopPropagation();
-    closeTab(id);
+    closeTab(id).catch(showError);
   });
 
   el.append(dot, label, close);
   el.addEventListener("click", () => activate(id));
+  el.addEventListener("keydown", (event) => {
+    if (event.target !== el) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      activate(id);
+    } else if (event.key === "Delete") {
+      event.preventDefault();
+      closeTab(id).catch(showError);
+    }
+  });
   // Double-click the tab to rename it (right-click menu is wired globally).
   el.addEventListener("dblclick", (e) => {
     e.preventDefault();
@@ -1585,6 +1873,35 @@ function closeCtxMenu() {
   document.getElementById("ctx-menu")?.remove();
 }
 
+function prepareMenu(menu, onEscape) {
+  menu.setAttribute("role", "menu");
+  for (const item of menu.querySelectorAll("li")) {
+    if (item.classList.contains("sep") || item.classList.contains("section-label")) continue;
+    item.setAttribute("role", "menuitem");
+    item.tabIndex = item.classList.contains("disabled") ? -1 : 0;
+    if (item.classList.contains("disabled")) item.setAttribute("aria-disabled", "true");
+  }
+  if (menu.dataset.keyboardReady === "true") return;
+  menu.dataset.keyboardReady = "true";
+  menu.addEventListener("keydown", (event) => {
+    const item = event.target.closest("li[role='menuitem']");
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onEscape();
+    } else if (item && event.target === item && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      item.click();
+    } else if (item && event.target === item && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+      event.preventDefault();
+      const siblings = [...item.parentElement.children].filter(
+        (candidate) => candidate.matches("li[role='menuitem']") && candidate.tabIndex === 0,
+      );
+      const offset = event.key === "ArrowDown" ? 1 : -1;
+      siblings[(siblings.indexOf(item) + offset + siblings.length) % siblings.length]?.focus();
+    }
+  });
+}
+
 function showTabMenu(x, y, id) {
   closeCtxMenu();
   const menu = document.createElement("ul");
@@ -1604,12 +1921,26 @@ function showTabMenu(x, y, id) {
     mk(tr("rename"), () => startRename(id)),
     mk(tr("duplicate"), () => {
       const t = tabs.get(id);
-      if (t) createTab(t.profile);
+      if (t) createTab(t.profile).catch(showError);
     }),
-    mk(tr("closeTab"), () => closeTab(id)),
+    mk(tr("closeTab"), () => closeTab(id).catch(showError)),
   );
 
   placeMenu(menu, x, y);
+}
+
+async function pasteToLeaf(leaf) {
+  try {
+    const text = await clipboardRead();
+    if (!text || leaf.closed || activeLeaf() !== leaf) return;
+    leaf.term.focus();
+    // xterm normalizes newlines and wraps bracketed paste when the child asks.
+    leaf.term.paste(text);
+  } catch (error) {
+    showError(error);
+  } finally {
+    if (!leaf.closed && activeLeaf() === leaf) leaf.term.focus();
+  }
 }
 
 // Right-click menu inside the terminal: Copy / Paste / Select All + splits.
@@ -1642,19 +1973,16 @@ function showTermMenu(x, y) {
   };
 
   menu.append(
-    mk(tr("copy"), () => clipboardWrite(sel).catch(() => {}), !sel),
-    mk(
-      tr("paste"),
-      () =>
-        clipboardRead()
-          .then((txt) => txt && invoke("write_session", { id: leaf.sessionId, data: txt }))
-          .catch(() => {}),
-    ),
-    mk(tr("selectAll"), () => leaf.term.selectAll()),
+    mk(tr("copy"), () => clipboardWrite(sel).catch(showError).finally(() => leaf.term.focus()), !sel),
+    mk(tr("paste"), () => pasteToLeaf(leaf)),
+    mk(tr("selectAll"), () => {
+      leaf.term.selectAll();
+      leaf.term.focus();
+    }),
     sep(),
-    mk(tr("splitRight"), () => splitLeaf(leaf, "row")),
-    mk(tr("splitDown"), () => splitLeaf(leaf, "col")),
-    mk(tr("closePane"), () => closeLeaf(leaf)),
+    mk(tr("splitRight"), () => splitLeaf(leaf, "row").catch(showError)),
+    mk(tr("splitDown"), () => splitLeaf(leaf, "col").catch(showError)),
+    mk(tr("closePane"), () => closeLeaf(leaf).catch(showError)),
   );
 
   placeMenu(menu, x, y);
@@ -1662,45 +1990,59 @@ function showTermMenu(x, y) {
 
 function placeMenu(menu, x, y) {
   document.body.appendChild(menu);
-  menu.style.left = Math.min(x, window.innerWidth - menu.offsetWidth - 8) + "px";
-  menu.style.top = Math.min(y, window.innerHeight - menu.offsetHeight - 8) + "px";
+  menu.style.left = Math.max(8, Math.min(x, window.innerWidth - menu.offsetWidth - 8)) + "px";
+  menu.style.top = Math.max(8, Math.min(y, window.innerHeight - menu.offsetHeight - 8)) + "px";
+  prepareMenu(menu, () => {
+    closeCtxMenu();
+    activeLeaf()?.term.focus();
+  });
+  menu.querySelector("li[tabindex='0']")?.focus();
 }
 
-function activate(id) {
+function activate(id, fromCreation = false) {
   const tab = tabs.get(id);
-  if (!tab) return;
+  if (!tab || !tab.root) return;
+  if (!fromCreation || pendingTabFocus === id) pendingTabFocus = null;
   for (const [, other] of tabs) {
     other.container.classList.remove("active");
     other.tabEl.classList.remove("active");
+    other.tabEl.setAttribute("aria-selected", "false");
   }
   tab.container.classList.add("active");
   tab.tabEl.classList.add("active");
+  tab.tabEl.setAttribute("aria-selected", "true");
+  tab.tabEl.scrollIntoView({ block: "nearest", inline: "nearest" });
   activeTabId = id;
   updateLeafFocus(tab);
   requestAnimationFrame(() => {
     fitTab(tab);
     (tab.activeLeaf ?? firstLeaf(tab.root))?.term.focus();
   });
+  persistState();
 }
 
 async function closeTab(id) {
   const tab = tabs.get(id);
-  if (!tab) return;
-  for (const lf of leavesOf(tab.root)) {
-    await invoke("close_session", { id: lf.sessionId }).catch(() => {});
-    lf.ro?.disconnect();
-    lf.term.dispose();
-    leaves.delete(lf.sessionId);
+  if (!tab || tab.closing) return;
+  tab.closing = true;
+  const order = [...tabs.values()].filter((candidate) => candidate.root || candidate.id === id).map((candidate) => candidate.id);
+  const index = order.indexOf(id);
+  const nextId = order[index + 1] ?? order[index - 1];
+  for (const lf of [...leaves.values()].filter((candidate) => candidate.tab === tab)) {
+    await disposeLeaf(lf);
   }
   tab.container.remove();
   tab.tabEl.remove();
   tabs.delete(id);
-  persistState();
-
+  if (pendingTabFocus === id) pendingTabFocus = null;
   if (activeTabId === id) {
-    const next = [...tabs.keys()].at(-1);
-    if (next != null) activate(next);
-    else appWindow.close();
+    if (nextId != null) activate(nextId);
+    else activeTabId = null;
+  }
+  persistState();
+  if (tabs.size === 0) {
+    await flushState();
+    await appWindow.close();
   }
 }
 
@@ -1716,10 +2058,22 @@ function installShortcuts() {
     (e) => {
       // Never hijack keys while editing a tab name.
       if (e.target instanceof HTMLInputElement) return;
+      if (document.getElementById("help-overlay") || document.getElementById("ssh-overlay")) return;
 
       const ctrl = e.ctrlKey;
       const shift = e.shiftKey;
       const k = e.key.toLowerCase();
+
+      if ((k === "contextmenu" || (k === "f10" && shift)) && !ctrl && !e.altKey) {
+        const leaf = activeLeaf();
+        if (leaf) {
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = leaf.el.getBoundingClientRect();
+          showTermMenu(rect.left + 24, rect.top + 24);
+        }
+        return;
+      }
 
       // F1 — help overlay.
       if (k === "f1" && !ctrl && !shift && !e.altKey) {
@@ -1733,7 +2087,7 @@ function installShortcuts() {
         if (k === "t") {
           e.preventDefault();
           e.stopPropagation();
-          createTab();
+          createTab().catch(showError);
           return;
         }
         if (k === "w") {
@@ -1741,7 +2095,7 @@ function installShortcuts() {
           e.preventDefault();
           e.stopPropagation();
           const lf = activeLeaf();
-          if (lf) closeLeaf(lf);
+          if (lf) closeLeaf(lf).catch(showError);
           return;
         }
         if (k === "d") {
@@ -1749,7 +2103,7 @@ function installShortcuts() {
           e.preventDefault();
           e.stopPropagation();
           const lf = activeLeaf();
-          if (lf) splitLeaf(lf, "row");
+          if (lf) splitLeaf(lf, "row").catch(showError);
           return;
         }
         if (k === "e") {
@@ -1757,7 +2111,7 @@ function installShortcuts() {
           e.preventDefault();
           e.stopPropagation();
           const lf = activeLeaf();
-          if (lf) splitLeaf(lf, "col");
+          if (lf) splitLeaf(lf, "col").catch(showError);
           return;
         }
         if (k === "c") {
@@ -1773,11 +2127,7 @@ function installShortcuts() {
           e.preventDefault();
           e.stopPropagation();
           const lf = activeLeaf();
-          if (lf) {
-            clipboardRead()
-              .then((txt) => txt && invoke("write_session", { id: lf.sessionId, data: txt }))
-              .catch(() => {});
-          }
+          if (lf) pasteToLeaf(lf);
           return;
         }
       }
@@ -1872,6 +2222,11 @@ async function openCwdTab(dir) {
   await createTab({ ...defaultProfile(), cwd: dir }, baseName(dir));
 }
 
+function setProfileMenuOpen(open) {
+  document.getElementById("profile-menu").classList.toggle("hidden", !open);
+  document.getElementById("profile-btn").setAttribute("aria-expanded", String(open));
+}
+
 function buildProfileMenu() {
   const menu = document.getElementById("profile-menu");
   menu.innerHTML = "";
@@ -1884,8 +2239,8 @@ function buildProfileMenu() {
     name.textContent = p.name;
     li.append(sw, name);
     li.addEventListener("click", () => {
-      menu.classList.add("hidden");
-      createTab(p);
+      setProfileMenuOpen(false);
+      createTab(p).catch(showError);
     });
     menu.appendChild(li);
   }
@@ -1911,21 +2266,35 @@ function buildProfileMenu() {
     sw.style.background = "#bb9af7";
     const name = document.createElement("span");
     name.className = "ssh-name";
-    name.textContent = conn.name || `${conn.user}@${conn.host}`;
-    const del = document.createElement("span");
+    name.textContent = conn.name || (conn.user ? `${conn.user}@${conn.host}` : conn.host);
+    const edit = document.createElement("button");
+    edit.className = "ssh-edit";
+    edit.type = "button";
+    edit.textContent = "✎";
+    edit.title = sshText("action");
+    edit.setAttribute("aria-label", sshText("edit"));
+    edit.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setProfileMenuOpen(false);
+      openSshForm(conn);
+    });
+    const del = document.createElement("button");
     del.className = "ssh-del";
+    del.type = "button";
     del.textContent = "✕";
     del.title = tr("delete");
+    del.setAttribute("aria-label", tr("delete"));
     del.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (!window.confirm(`${tr("delete")}: ${conn.name || conn.host}?`)) return;
       sshConnections = sshConnections.filter((c) => c !== conn);
       persistState();
       buildProfileMenu();
     });
-    li.append(sw, name, del);
+    li.append(sw, name, edit, del);
     li.addEventListener("click", () => {
-      menu.classList.add("hidden");
-      createTab(sshProfile(conn));
+      setProfileMenuOpen(false);
+      createTab(sshProfile(conn, sshPath)).catch(showError);
     });
     menu.appendChild(li);
   }
@@ -1934,12 +2303,12 @@ function buildProfileMenu() {
   addSsh.className = "action";
   addSsh.textContent = "➕  " + tr("addSsh");
   addSsh.addEventListener("click", () => {
-    menu.classList.add("hidden");
+    setProfileMenuOpen(false);
     openSshForm();
   });
   menu.appendChild(addSsh);
 
-  // ---- Language (collapsed into a fly-out submenu) ----
+  // ---- Language and theme (expand inside the scrollable menu) ----
   addSep();
   const langLi = document.createElement("li");
   langLi.className = "has-submenu";
@@ -1948,7 +2317,7 @@ function buildProfileMenu() {
   langLabel.textContent = "🌐  " + tr("language") + ": " + current;
   const arrow = document.createElement("span");
   arrow.className = "submenu-arrow";
-  arrow.textContent = "‹";
+  arrow.textContent = "⌄";
   const sub = document.createElement("ul");
   sub.className = "submenu";
   for (const lang of LANGUAGES) {
@@ -1962,12 +2331,19 @@ function buildProfileMenu() {
     li.append(check, name);
     li.addEventListener("click", (e) => {
       e.stopPropagation();
-      menu.classList.add("hidden");
+      setProfileMenuOpen(false);
       setLocale(lang.code);
     });
     sub.appendChild(li);
   }
   langLi.append(langLabel, arrow, sub);
+  langLi.setAttribute("aria-expanded", "false");
+  langLi.addEventListener("click", (event) => {
+    if (event.target.closest(".submenu")) return;
+    event.stopPropagation();
+    langLi.classList.toggle("open");
+    langLi.setAttribute("aria-expanded", String(langLi.classList.contains("open")));
+  });
   menu.appendChild(langLi);
 
   // ---- Theme (fly-out submenu) ----
@@ -1977,7 +2353,7 @@ function buildProfileMenu() {
   themeLabel.textContent = "🎨  " + tr("theme") + ": " + (THEMES[themeId]?.label ?? themeId);
   const tArrow = document.createElement("span");
   tArrow.className = "submenu-arrow";
-  tArrow.textContent = "‹";
+  tArrow.textContent = "⌄";
   const tSub = document.createElement("ul");
   tSub.className = "submenu";
   for (const [id, th] of Object.entries(THEMES)) {
@@ -1994,12 +2370,19 @@ function buildProfileMenu() {
     li.append(check, sw, name);
     li.addEventListener("click", (e) => {
       e.stopPropagation();
-      menu.classList.add("hidden");
+      setProfileMenuOpen(false);
       setTheme(id);
     });
     tSub.appendChild(li);
   }
   themeLi.append(themeLabel, tArrow, tSub);
+  themeLi.setAttribute("aria-expanded", "false");
+  themeLi.addEventListener("click", (event) => {
+    if (event.target.closest(".submenu")) return;
+    event.stopPropagation();
+    themeLi.classList.toggle("open");
+    themeLi.setAttribute("aria-expanded", String(themeLi.classList.contains("open")));
+  });
   menu.appendChild(themeLi);
 
   // ---- Help + Config ----
@@ -2008,7 +2391,7 @@ function buildProfileMenu() {
   help.className = "action";
   help.textContent = "❔  " + tr("help");
   help.addEventListener("click", () => {
-    menu.classList.add("hidden");
+    setProfileMenuOpen(false);
     openHelp();
   });
   menu.appendChild(help);
@@ -2038,31 +2421,56 @@ function buildProfileMenu() {
   edit.className = "action";
   edit.textContent = "⚙  " + tr("editConfig");
   edit.addEventListener("click", () => {
-    menu.classList.add("hidden");
-    invoke("open_config").catch(() => {});
+    setProfileMenuOpen(false);
+    invoke("open_config").catch(showError);
   });
   menu.appendChild(edit);
+  prepareMenu(menu, () => {
+    setProfileMenuOpen(false);
+    document.getElementById("profile-btn").focus();
+  });
 }
 
 // ---------------------------------------------------------------------------
 // SSH connection manager
 // ---------------------------------------------------------------------------
-function sshProfile(conn) {
-  const target = conn.user ? `${conn.user}@${conn.host}` : conn.host;
-  const args = [];
-  if (conn.port && String(conn.port) !== "22") args.push("-p", String(conn.port));
-  if (conn.key) args.push("-i", conn.key);
-  args.push(target);
-  return {
-    name: conn.name || target,
-    shell: sshPath,
-    args,
-    cwd: null,
-    color: "#bb9af7",
+function mountDialog(overlay, card, initialFocus) {
+  const previousFocus = document.activeElement;
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-modal", "true");
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  const close = () => {
+    overlay.remove();
+    if (previousFocus?.isConnected && !previousFocus.closest(".hidden")) previousFocus.focus();
+    else activeLeaf()?.term.focus();
   };
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+  overlay.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+    } else if (event.key === "Tab") {
+      const focusable = [...card.querySelectorAll("button, input, [tabindex='0']")];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+  initialFocus.focus();
+  return close;
 }
 
-function openSshForm() {
+function openSshForm(existing = null) {
   document.getElementById("ssh-overlay")?.remove();
 
   const overlay = document.createElement("div");
@@ -2071,49 +2479,57 @@ function openSshForm() {
   const card = document.createElement("div");
   card.className = "ssh-card";
   card.innerHTML = `
-    <h3>${tr("sshTitle")}</h3>
+    <h3>${existing ? sshText("edit") : tr("sshTitle")}</h3>
     <label>${tr("fName")}<input data-f="name" placeholder="${tr("phName")}" /></label>
     <label>${tr("fHost")}<input data-f="host" placeholder="${tr("phHost")}" /></label>
     <div class="row">
       <label>${tr("fUser")}<input data-f="user" placeholder="root" /></label>
-      <label class="port">${tr("fPort")}<input data-f="port" placeholder="22" /></label>
+      <label class="port">${tr("fPort")}<input data-f="port" type="number" min="1" max="65535" placeholder="22" /></label>
     </div>
     <label>${tr("fKey")}<input data-f="key" placeholder="C:\\Users\\...\\id_ed25519" /></label>
+    <p class="form-error" role="alert" hidden></p>
     <div class="ssh-actions">
-      <button class="btn-cancel">${tr("cancel")}</button>
-      <button class="btn-save">${tr("save")}</button>
+      <button type="button" class="btn-cancel">${tr("cancel")}</button>
+      <button type="button" class="btn-save">${tr("save")}</button>
     </div>`;
 
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-
   const get = (f) => card.querySelector(`[data-f="${f}"]`).value.trim();
-  const close = () => overlay.remove();
-
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
-  });
+  if (existing) {
+    for (const field of ["name", "host", "user", "port", "key"]) {
+      card.querySelector(`[data-f="${field}"]`).value = existing[field] ?? "";
+    }
+  }
+  const close = mountDialog(overlay, card, card.querySelector('[data-f="name"]'));
   card.querySelector(".btn-cancel").addEventListener("click", close);
   card.querySelector(".btn-save").addEventListener("click", () => {
     const host = get("host");
-    if (!host) {
+    const port = Number(get("port") || "22");
+    const error = card.querySelector(".form-error");
+    if (!host || /^-/.test(host) || /\s/.test(host)) {
+      error.textContent = sshText("host");
+      error.hidden = false;
       card.querySelector('[data-f="host"]').focus();
+      return;
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      error.textContent = sshText("port");
+      error.hidden = false;
+      card.querySelector('[data-f="port"]').focus();
       return;
     }
     const conn = {
       name: get("name"),
       host,
       user: get("user"),
-      port: get("port") || "22",
+      port: String(port),
       key: get("key"),
     };
-    sshConnections.push(conn);
+    if (existing) Object.assign(existing, conn);
+    else sshConnections.push(conn);
     persistState();
     buildProfileMenu();
     close();
   });
-
-  card.querySelector('[data-f="name"]').focus();
 }
 
 // ---------------------------------------------------------------------------
@@ -2170,7 +2586,7 @@ function openHelp() {
   const card = document.createElement("div");
   card.className = "help-card";
 
-  let html = `<div class="help-head"><h2>Abergin</h2><span class="help-ver">v0.1.0</span></div>
+  let html = `<div class="help-head"><h2>Abergin</h2><span class="help-ver">v${pkg.version}</span></div>
     <p class="help-intro">${tr("hIntro")}</p>`;
   for (const g of groups) {
     html += `<h4>${g.title}</h4><table class="help-tbl">`;
@@ -2182,17 +2598,8 @@ function openHelp() {
   html += `<div class="help-actions"><button class="btn-save">${tr("tipClose")}</button></div>`;
   card.innerHTML = html;
 
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-
-  const close = () => overlay.remove();
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
-  });
+  const close = mountDialog(overlay, card, card.querySelector(".btn-save"));
   card.querySelector(".btn-save").addEventListener("click", close);
-  overlay.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -2200,10 +2607,13 @@ function openHelp() {
 // ---------------------------------------------------------------------------
 async function main() {
   config = await invoke("get_config");
+  configureBaseTheme();
 
   // Restore SSH connections + saved tabs from the previous session.
   const saved = await invoke("get_state").catch(() => ({}));
-  sshConnections = Array.isArray(saved.ssh) ? saved.ssh : [];
+  sshConnections = Array.isArray(saved.ssh)
+    ? saved.ssh.filter((connection) => connection && typeof connection.host === "string" && connection.host.trim())
+    : [];
   sshPath = saved.sshPath ?? "ssh";
   locale = I18N[saved.locale] ? saved.locale : detectLocale();
   applyI18n();
@@ -2235,7 +2645,7 @@ async function main() {
     if (dir) openCwdTab(dir).catch(() => {});
   });
 
-  document.getElementById("new-tab").addEventListener("click", () => createTab());
+  document.getElementById("new-tab").addEventListener("click", () => createTab().catch(showError));
 
   // Live tab reordering while dragging a tab over the strip.
   $tabs.addEventListener("dragover", (e) => {
@@ -2251,23 +2661,28 @@ async function main() {
   const pMenu = document.getElementById("profile-menu");
   pBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    pMenu.classList.toggle("hidden");
+    setProfileMenuOpen(pMenu.classList.contains("hidden"));
+    if (!pMenu.classList.contains("hidden") && e.detail === 0) {
+      pMenu.querySelector("li[tabindex='0']")?.focus();
+    }
   });
   document.addEventListener("click", () => {
-    pMenu.classList.add("hidden");
+    setProfileMenuOpen(false);
     closeCtxMenu();
   });
 
   // Custom context menus: tab menu on tabs, copy/paste/split menu in panes.
   document.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
+    if (e.target.closest("input, textarea")) return;
     const tabEl = e.target.closest(".tab");
     if (tabEl) {
+      e.preventDefault();
       showTabMenu(e.clientX, e.clientY, Number(tabEl.dataset.id));
       return;
     }
     const leafEl = e.target.closest(".leaf");
     if (leafEl && leafEl._leaf) {
+      e.preventDefault();
       setActiveLeaf(leafEl._leaf); // right-click targets that pane
       showTermMenu(e.clientX, e.clientY);
     }
@@ -2278,7 +2693,12 @@ async function main() {
   // Window controls
   document.getElementById("win-min").addEventListener("click", () => appWindow.minimize());
   document.getElementById("win-max").addEventListener("click", () => appWindow.toggleMaximize());
-  document.getElementById("win-close").addEventListener("click", () => appWindow.close());
+  document.getElementById("win-close").addEventListener("click", () => {
+    appWindow.close().catch(showError);
+  });
+  await appWindow.onCloseRequested(async () => {
+    await flushState();
+  });
 
   // Middle-click paste (Linux convention) — into the pane under the cursor.
   $panes.addEventListener("mousedown", (e) => {
@@ -2286,9 +2706,8 @@ async function main() {
     const lf = e.target.closest(".leaf")?._leaf ?? activeLeaf();
     if (!lf) return;
     e.preventDefault();
-    clipboardRead()
-      .then((txt) => txt && invoke("write_session", { id: lf.sessionId, data: txt }))
-      .catch(() => {});
+    setActiveLeaf(lf);
+    pasteToLeaf(lf);
   });
 
   // Ctrl + mouse wheel — zoom text (terminal convention).
@@ -2324,9 +2743,15 @@ async function main() {
           console.error("Skipping malformed saved tab:", ti);
           continue;
         }
-        const prof = config.profiles.find((p) => p.name === ti.profile) || defaultProfile();
+        const prof = restoreProfile(
+          ti.profile,
+          config.profiles,
+          sshConnections,
+          sshPath,
+          defaultProfile(),
+        );
         try {
-          await createTab(prof, ti.name ?? undefined, ti.layout);
+          await createTab(prof, ti.name ?? undefined, ti.layout, ti.activePane);
         } catch (error) {
           console.error(`Failed to restore tab "${ti.name ?? ti.profile ?? "unknown"}":`, error);
         }
@@ -2348,6 +2773,10 @@ async function main() {
   if (tabs.size === 0) {
     await createTab();
   } else {
+    if (!launchCwd && Number.isInteger(saved.activeTab)) {
+      const id = [...tabs.keys()][saved.activeTab];
+      if (id != null) activate(id);
+    }
     persistState();
   }
 }

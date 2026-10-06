@@ -38,6 +38,12 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Frontend tests
+        run: npm test
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
       # Builds the app (unsigned — signing config lives in a gitignored file),
       # creates a draft GitHub Release for the tag and uploads the NSIS installer.
       - name: Build and publish release

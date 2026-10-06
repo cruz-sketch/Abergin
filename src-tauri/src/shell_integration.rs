@@ -46,7 +46,11 @@ pub fn dir_from_args<I: IntoIterator<Item = String>>(args: I) -> Option<String> 
 /// shell (and a human reading the tab title) gets a plain path.
 #[cfg(windows)]
 fn strip_unc(p: &str) -> String {
-    p.strip_prefix(r"\\?\").unwrap_or(p).to_string()
+    if let Some(rest) = p.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{rest}")
+    } else {
+        p.strip_prefix(r"\\?\").unwrap_or(p).to_string()
+    }
 }
 #[cfg(not(windows))]
 fn strip_unc(p: &str) -> String {
@@ -130,4 +134,22 @@ pub fn set_explorer_integration(_enabled: bool) -> Result<(), String> {
 #[cfg(not(windows))]
 pub fn get_explorer_integration() -> bool {
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_unc;
+
+    #[test]
+    #[cfg(windows)]
+    fn converts_verbatim_local_and_network_paths() {
+        assert_eq!(
+            strip_unc(r"\\?\C:\Projects\Abergin"),
+            r"C:\Projects\Abergin"
+        );
+        assert_eq!(
+            strip_unc(r"\\?\UNC\server\share\folder"),
+            r"\\server\share\folder"
+        );
+    }
 }
