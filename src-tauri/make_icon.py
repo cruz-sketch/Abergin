@@ -56,11 +56,14 @@ def thick_seg(x0, y0, x1, y1, width, col):
                 put(x, y, col[0], col[1], col[2], int(255 * cov))
 
 accent = (0x7a, 0xa2, 0xf7)
+# Keep the prompt large enough to read at the 16- and 24-pixel sizes used by
+# the Windows taskbar. The dark tile fills the canvas, but blends into a dark
+# taskbar, so the bright mark determines the icon's apparent size.
 # Chevron ">"
-thick_seg(360, 350, 560, 512, 70, accent)
-thick_seg(560, 512, 360, 674, 70, accent)
+thick_seg(320, 318, 560, 512, 84, accent)
+thick_seg(560, 512, 320, 706, 84, accent)
 # Prompt underscore cursor
-thick_seg(620, 650, 760, 650, 64, (0xbb, 0x9a, 0xf7))
+thick_seg(632, 678, 800, 678, 77, (0xbb, 0x9a, 0xf7))
 
 # Encode PNG
 def png_chunk(tag, data):
