@@ -2896,7 +2896,23 @@ async function main() {
   installShortcuts();
 
   // Window controls
-  document.getElementById("win-min").addEventListener("click", () => appWindow.minimize());
+  const minimizeButton = document.getElementById("win-min");
+  let restoreFocusAfterMinimize = false;
+  minimizeButton.addEventListener("click", () => {
+    restoreFocusAfterMinimize = true;
+    appWindow.minimize().catch((error) => {
+      restoreFocusAfterMinimize = false;
+      showError(error);
+    });
+  });
+  await appWindow.onFocusChanged(({ payload: focused }) => {
+    if (!focused || !restoreFocusAfterMinimize) return;
+    restoreFocusAfterMinimize = false;
+    requestAnimationFrame(() => {
+      if (searchState) document.getElementById("search-input").focus();
+      else activeLeaf()?.term.focus();
+    });
+  });
   document.getElementById("win-max").addEventListener("click", () => appWindow.toggleMaximize());
   document.getElementById("win-close").addEventListener("click", () => {
     appWindow.close().catch(showError);
