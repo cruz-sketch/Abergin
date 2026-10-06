@@ -19,8 +19,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
   -Architecture arm64
 ```
 
-Outputs: `store/out/Abergin.Terminal.Local_1.0.202.0_x64.msix` and
-`store/out/Abergin.Terminal.Local_1.0.202.0_arm64.msix` for app version 0.2.2.
+Outputs: `store/out/Abergin.Terminal.Local_1.0.203.0_x64.msix` and
+`store/out/Abergin.Terminal.Local_1.0.203.0_arm64.msix` for app version 0.2.3.
 Build and package contents are under `store/out/` and ignored by Git.
 GitHub Actions builds both architectures on every `v*` release tag and keeps
 them as a `Abergin-Store-MSIX-unsigned` workflow artifact. It also attaches
