@@ -2,6 +2,8 @@ mod config;
 mod pty;
 mod shell_integration;
 mod state;
+#[cfg(feature = "store")]
+mod store_migration;
 
 use pty::PtyState;
 use shell_integration::LaunchState;
@@ -40,6 +42,7 @@ pub fn run() {
             shell_integration::take_launch_cwd,
             shell_integration::set_explorer_integration,
             shell_integration::get_explorer_integration,
+            shell_integration::explorer_integration_available,
         ])
         .run(tauri::generate_context!())
         .expect("error while running abergin");

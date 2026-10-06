@@ -3,15 +3,17 @@
 //! Two parts:
 //!  * Registry helpers that add/remove a context-menu entry under
 //!    `HKCU\Software\Classes\…` (per-user, so no admin rights are needed).
+//!    These are excluded from the Store build because packaged registry writes
+//!    are not a reliable way to register Explorer commands.
 //!  * `LaunchState`, which captures the directory Explorer passed on the command
 //!    line (`"%V"`) so the frontend can open a tab there on startup.
 
 use parking_lot::Mutex;
 use std::path::Path;
 
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 use winreg::enums::HKEY_CURRENT_USER;
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 use winreg::RegKey;
 
 /// Directory captured from argv at startup, consumed once by the frontend.
@@ -68,7 +70,7 @@ pub fn take_launch_cwd(state: tauri::State<'_, LaunchState>) -> Option<String> {
 // Explorer context-menu registration (HKCU — per user, no elevation)
 // ---------------------------------------------------------------------------
 
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 const ROOTS: [&str; 3] = [
     // Right-click a folder.
     r"Software\Classes\Directory\shell\Abergin",
@@ -78,7 +80,7 @@ const ROOTS: [&str; 3] = [
     r"Software\Classes\Drive\shell\Abergin",
 ];
 
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 fn exe_path() -> Result<String, String> {
     std::env::current_exe()
         .map_err(|e| e.to_string())?
@@ -88,7 +90,7 @@ fn exe_path() -> Result<String, String> {
 }
 
 #[tauri::command]
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 pub fn set_explorer_integration(enabled: bool) -> Result<(), String> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     if enabled {
@@ -116,7 +118,7 @@ pub fn set_explorer_integration(enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "store")))]
 pub fn get_explorer_integration() -> bool {
     RegKey::predef(HKEY_CURRENT_USER)
         .open_subkey(ROOTS[0])
@@ -125,20 +127,33 @@ pub fn get_explorer_integration() -> bool {
 
 // Non-Windows stubs so the crate still type-checks off-Windows.
 #[tauri::command]
-#[cfg(not(windows))]
+#[cfg(any(not(windows), feature = "store"))]
 pub fn set_explorer_integration(_enabled: bool) -> Result<(), String> {
-    Err("Explorer integration is only available on Windows".into())
+    Err("Explorer integration is unavailable in this build".into())
 }
 
 #[tauri::command]
-#[cfg(not(windows))]
+#[cfg(any(not(windows), feature = "store"))]
 pub fn get_explorer_integration() -> bool {
     false
+}
+
+#[tauri::command]
+pub fn explorer_integration_available() -> bool {
+    cfg!(all(windows, not(feature = "store")))
 }
 
 #[cfg(test)]
 mod tests {
     use super::strip_unc;
+
+    #[test]
+    #[cfg(feature = "store")]
+    fn store_build_never_registers_explorer_commands() {
+        assert!(!super::explorer_integration_available());
+        assert!(!super::get_explorer_integration());
+        assert!(super::set_explorer_integration(true).is_err());
+    }
 
     #[test]
     #[cfg(windows)]

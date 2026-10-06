@@ -42,7 +42,13 @@ fn read_state(path: &Path) -> Option<Value> {
 fn state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir.join("state.json"))
+    let path = dir.join("state.json");
+    #[cfg(feature = "store")]
+    {
+        super::store_migration::copy_standalone_file_if_missing(&path)?;
+        super::store_migration::copy_standalone_file_if_missing(&path.with_extension("json.bak"))?;
+    }
+    Ok(path)
 }
 
 /// Location of the Windows OpenSSH client, falling back to a bare `ssh`

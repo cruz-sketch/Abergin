@@ -29,6 +29,13 @@
 
     <!-- Terminal panes get mounted here, one per tab -->
     <main id="panes"></main>
+    <div id="search-bar" class="search-bar" role="search" hidden>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" />
+      <output id="search-count" aria-live="polite"></output>
+      <button id="search-prev" type="button">↑</button>
+      <button id="search-next" type="button">↓</button>
+      <button id="search-close" type="button">×</button>
+    </div>
     <div id="error-notices" aria-live="assertive"></div>
 
     <script type="module" src="/src/main.js"></script>

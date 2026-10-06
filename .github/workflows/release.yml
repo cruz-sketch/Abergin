@@ -1,7 +1,7 @@
 name: Release
 
-# Build the Windows installer and attach it to a GitHub Release whenever a
-# version tag (e.g. v0.1.0) is pushed. Can also be run manually for testing.
+# Build the NSIS installer and both Store MSIX packages for every version tag.
+# Manual runs build the same files as workflow artifacts without creating a release.
 on:
   push:
     tags:
@@ -13,27 +13,28 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
 
       - name: Setup Rust (MSVC)
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
+          targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
 
       - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.9.2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            src-tauri -> target-store
 
       - name: Install frontend dependencies
         run: npm ci
@@ -44,10 +45,10 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
-      # Builds the app (unsigned — signing config lives in a gitignored file),
-      # creates a draft GitHub Release for the tag and uploads the NSIS installer.
+      # The standalone installer is unsigned; signing config is gitignored.
       - name: Build and publish release
-        uses: tauri-apps/tauri-action@v0
+        if: github.event_name == 'push'
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -58,7 +59,55 @@ jobs:
 
             Download the Windows installer (`.exe`) from the assets below.
 
+            The x64 and ARM64 `.msix` files are **unsigned Microsoft Store submission
+            packages**. They are not direct-download installers. Packages with the
+            `Abergin.Terminal.Local` identity are previews; rebuild with the exact
+            Partner Center identity before submitting them to the Store.
+
             > This is an **unsigned** build, so Windows SmartScreen may warn about an
             > unknown publisher — click **More info → Run anyway**.
           releaseDraft: true
           prerelease: false
+
+      - name: Build standalone installer for manual run
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run tauri -- build
+
+      - name: Upload standalone installer for manual run
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: Abergin-NSIS-unsigned
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: Build and validate Store MSIX (x64 and ARM64)
+        shell: pwsh
+        run: |
+          foreach ($architecture in @('x64', 'arm64')) {
+            ./store/build-msix.ps1 `
+              -IdentityName 'Abergin.Terminal.Local' `
+              -Publisher 'CN=Abergin Local' `
+              -Architecture $architecture
+          }
+
+      - name: Upload Store MSIX workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Abergin-Store-MSIX-unsigned
+          path: store/out/*.msix
+          if-no-files-found: error
+
+      - name: Attach Store MSIX to draft release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $packages = @(Get-ChildItem -LiteralPath store/out -Filter '*.msix' -File)
+          if ($packages.Count -ne 2) { throw "Expected 2 MSIX packages, found $($packages.Count)." }
+          foreach ($package in $packages) {
+            gh release upload $env:RELEASE_TAG $package.FullName --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Could not upload $($package.Name)." }
+          }

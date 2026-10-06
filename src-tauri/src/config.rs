@@ -7,7 +7,10 @@ use tauri::Manager;
 fn config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir.join("config.json"))
+    let path = dir.join("config.json");
+    #[cfg(feature = "store")]
+    super::store_migration::copy_standalone_file_if_missing(&path)?;
+    Ok(path)
 }
 
 fn exists(p: &str) -> bool {

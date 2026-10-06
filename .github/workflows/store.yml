@@ -1,0 +1,57 @@
+name: Store MSIX
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity_name:
+        description: Package/Identity/Name from Partner Center (local value for testing)
+        required: true
+        default: Abergin.Terminal.Local
+      publisher:
+        description: Package/Identity/Publisher from Partner Center (local value for testing)
+        required: true
+        default: CN=Abergin Local
+      publisher_display_name:
+        description: Publisher name shown in Windows
+        required: true
+        default: Abergin
+
+permissions:
+  contents: read
+
+jobs:
+  msix:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2.9.2
+        with:
+          workspaces: src-tauri -> target-store
+      - run: npm ci
+      - run: npm test
+      - name: Build and validate unsigned MSIX
+        shell: pwsh
+        env:
+          IDENTITY_NAME: ${{ inputs.identity_name }}
+          PUBLISHER: ${{ inputs.publisher }}
+          PUBLISHER_DISPLAY_NAME: ${{ inputs.publisher_display_name }}
+        run: |
+          foreach ($architecture in @('x64', 'arm64')) {
+            ./store/build-msix.ps1 `
+              -IdentityName $env:IDENTITY_NAME `
+              -Publisher $env:PUBLISHER `
+              -PublisherDisplayName $env:PUBLISHER_DISPLAY_NAME `
+              -Architecture $architecture
+          }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Abergin-Store-MSIX-unsigned
+          path: store/out/*.msix
+          if-no-files-found: error

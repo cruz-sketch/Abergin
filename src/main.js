@@ -3,10 +3,12 @@ import "./style.css";
 
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import pkg from "../package.json";
 import { cwdFromCmdOsc, cwdFromOsc7, cwdFromWslOsc, restoreProfile, serializeProfile, sessionArgs, sshProfile } from "./session-profile.js";
+import { shortcutKey } from "./shortcuts.js";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -941,11 +943,22 @@ function applyI18n() {
       el.setAttribute("aria-label", tr(key));
     }
   };
-  setTitle("new-tab", "tipNewTab");
+  const newTabTip = `${panelText("currentDirectory")} (Ctrl+Shift+T)`;
+  document.getElementById("new-tab").title = newTabTip;
+  document.getElementById("new-tab").setAttribute("aria-label", newTabTip);
   setTitle("profile-btn", "tipMenu");
   setTitle("win-min", "tipMin");
   setTitle("win-max", "tipMax");
   setTitle("win-close", "tipClose");
+  const searchInput = document.getElementById("search-input");
+  searchInput.placeholder = panelText("searchPlaceholder");
+  searchInput.setAttribute("aria-label", panelText("search"));
+  for (const [id, key] of [["search-prev", "previous"], ["search-next", "next"]]) {
+    document.getElementById(id).title = panelText(key);
+    document.getElementById(id).setAttribute("aria-label", panelText(key));
+  }
+  document.getElementById("search-close").title = tr("tipClose");
+  document.getElementById("search-close").setAttribute("aria-label", tr("tipClose"));
   for (const close of document.querySelectorAll(".tab .close")) {
     close.title = tr("closeTab");
     close.setAttribute("aria-label", tr("closeTab"));
@@ -1033,7 +1046,10 @@ THEMES["solarized-light"].term.foreground = "#52666d";
 let themeId = "tokyo-night";
 let currentTheme = THEMES["tokyo-night"];
 let fontSize = 13;
+let fontChoice = "";
 let baseThemeCustomized = false;
+
+const FONT_CHOICES = ["", "Cascadia Code", "Cascadia Mono", "Consolas", "JetBrains Mono", "Fira Code", "Iosevka Term"];
 
 function mixColor(first, second, weight) {
   const hex = (value) => value.match(/[0-9a-f]{2}/gi).map((part) => parseInt(part, 16));
@@ -1041,6 +1057,42 @@ function mixColor(first, second, weight) {
   const b = hex(second);
   return `#${a.map((channel, index) => Math.round(channel * (1 - weight) + b[index] * weight).toString(16).padStart(2, "0")).join("")}`;
 }
+
+const PANEL_TEXT = {
+  uk: { settings: "Налаштування", appearance: "Вигляд", integrations: "Інтеграції", advanced: "Додатково", fontSize: "Розмір шрифту", search: "Пошук у терміналі", searchPlaceholder: "Шукати у виводі…", previous: "Попередній збіг", next: "Наступний збіг", noMatches: "Немає збігів", currentDirectory: "Нова вкладка в поточній директорії" },
+  en: { settings: "Settings", appearance: "Appearance", integrations: "Integrations", advanced: "Advanced", fontSize: "Font size", search: "Find in terminal", searchPlaceholder: "Search terminal output…", previous: "Previous match", next: "Next match", noMatches: "No matches", currentDirectory: "New tab in current directory" },
+  de: { settings: "Einstellungen", appearance: "Darstellung", integrations: "Integrationen", advanced: "Erweitert", fontSize: "Schriftgröße", search: "Im Terminal suchen", searchPlaceholder: "Terminalausgabe durchsuchen…", previous: "Vorheriger Treffer", next: "Nächster Treffer", noMatches: "Keine Treffer", currentDirectory: "Neuer Tab im aktuellen Verzeichnis" },
+  fr: { settings: "Paramètres", appearance: "Apparence", integrations: "Intégrations", advanced: "Avancé", fontSize: "Taille de police", search: "Rechercher dans le terminal", searchPlaceholder: "Rechercher dans la sortie…", previous: "Résultat précédent", next: "Résultat suivant", noMatches: "Aucun résultat", currentDirectory: "Nouvel onglet dans le dossier actuel" },
+  es: { settings: "Configuración", appearance: "Apariencia", integrations: "Integraciones", advanced: "Avanzado", fontSize: "Tamaño de fuente", search: "Buscar en el terminal", searchPlaceholder: "Buscar en la salida…", previous: "Coincidencia anterior", next: "Coincidencia siguiente", noMatches: "Sin coincidencias", currentDirectory: "Nueva pestaña en el directorio actual" },
+  pl: { settings: "Ustawienia", appearance: "Wygląd", integrations: "Integracje", advanced: "Zaawansowane", fontSize: "Rozmiar czcionki", search: "Szukaj w terminalu", searchPlaceholder: "Szukaj w wynikach…", previous: "Poprzedni wynik", next: "Następny wynik", noMatches: "Brak wyników", currentDirectory: "Nowa karta w bieżącym katalogu" },
+  cs: { settings: "Nastavení", appearance: "Vzhled", integrations: "Integrace", advanced: "Pokročilé", fontSize: "Velikost písma", search: "Hledat v terminálu", searchPlaceholder: "Hledat ve výstupu…", previous: "Předchozí shoda", next: "Další shoda", noMatches: "Žádné shody", currentDirectory: "Nová karta v aktuálním adresáři" },
+  lt: { settings: "Nustatymai", appearance: "Išvaizda", integrations: "Integracijos", advanced: "Išplėstiniai", fontSize: "Šrifto dydis", search: "Ieškoti terminale", searchPlaceholder: "Ieškoti išvestyje…", previous: "Ankstesnis rezultatas", next: "Kitas rezultatas", noMatches: "Nėra rezultatų", currentDirectory: "Naujas skirtukas dabartiniame aplanke" },
+  lv: { settings: "Iestatījumi", appearance: "Izskats", integrations: "Integrācijas", advanced: "Papildu", fontSize: "Fonta lielums", search: "Meklēt terminālī", searchPlaceholder: "Meklēt izvadē…", previous: "Iepriekšējais rezultāts", next: "Nākamais rezultāts", noMatches: "Nav rezultātu", currentDirectory: "Jauna cilne pašreizējā mapē" },
+  et: { settings: "Seaded", appearance: "Välimus", integrations: "Integratsioonid", advanced: "Täpsemad", fontSize: "Fondi suurus", search: "Otsi terminalist", searchPlaceholder: "Otsi väljundist…", previous: "Eelmine vaste", next: "Järgmine vaste", noMatches: "Vasteid pole", currentDirectory: "Uus kaart praeguses kaustas" },
+  no: { settings: "Innstillinger", appearance: "Utseende", integrations: "Integrasjoner", advanced: "Avansert", fontSize: "Skriftstørrelse", search: "Søk i terminalen", searchPlaceholder: "Søk i utdata…", previous: "Forrige treff", next: "Neste treff", noMatches: "Ingen treff", currentDirectory: "Ny fane i gjeldende mappe" },
+  ro: { settings: "Setări", appearance: "Aspect", integrations: "Integrări", advanced: "Avansat", fontSize: "Dimensiunea fontului", search: "Caută în terminal", searchPlaceholder: "Caută în ieșire…", previous: "Rezultatul anterior", next: "Rezultatul următor", noMatches: "Niciun rezultat", currentDirectory: "Filă nouă în directorul curent" },
+  az: { settings: "Parametrlər", appearance: "Görünüş", integrations: "İnteqrasiyalar", advanced: "Əlavə", fontSize: "Şrift ölçüsü", search: "Terminalda axtar", searchPlaceholder: "Çıxışda axtar…", previous: "Əvvəlki nəticə", next: "Növbəti nəticə", noMatches: "Nəticə yoxdur", currentDirectory: "Cari qovluqda yeni tab" },
+  ja: { settings: "設定", appearance: "外観", integrations: "連携", advanced: "詳細", fontSize: "文字サイズ", search: "ターミナル内を検索", searchPlaceholder: "出力を検索…", previous: "前の一致", next: "次の一致", noMatches: "一致なし", currentDirectory: "現在のディレクトリで新しいタブ" },
+};
+function panelText(key) { return PANEL_TEXT[locale]?.[key] ?? PANEL_TEXT.en[key]; }
+
+const FONT_TEXT = {
+  uk: ["Шрифт термінала", "За замовчуванням", "Власний шрифт", "Застосувати", "Шрифт має бути встановлений у Windows"],
+  en: ["Terminal font", "System default", "Custom font", "Apply", "The font must be installed in Windows"],
+  de: ["Terminalschrift", "Systemstandard", "Eigene Schrift", "Anwenden", "Die Schrift muss in Windows installiert sein"],
+  fr: ["Police du terminal", "Par défaut", "Police personnalisée", "Appliquer", "La police doit être installée dans Windows"],
+  es: ["Fuente del terminal", "Predeterminada", "Fuente personalizada", "Aplicar", "La fuente debe estar instalada en Windows"],
+  pl: ["Czcionka terminala", "Domyślna", "Własna czcionka", "Zastosuj", "Czcionka musi być zainstalowana w Windows"],
+  cs: ["Písmo terminálu", "Výchozí", "Vlastní písmo", "Použít", "Písmo musí být nainstalované ve Windows"],
+  lt: ["Terminalo šriftas", "Numatytasis", "Pasirinktas šriftas", "Taikyti", "Šriftas turi būti įdiegtas sistemoje Windows"],
+  lv: ["Termināļa fonts", "Noklusējuma", "Pielāgots fonts", "Lietot", "Fontam jābūt instalētam Windows"],
+  et: ["Terminali font", "Vaikimisi", "Kohandatud font", "Rakenda", "Font peab olema Windowsisse installitud"],
+  no: ["Terminalskrift", "Systemstandard", "Egen skrifttype", "Bruk", "Skrifttypen må være installert i Windows"],
+  ro: ["Font terminal", "Implicit", "Font personalizat", "Aplică", "Fontul trebuie instalat în Windows"],
+  az: ["Terminal şrifti", "Standart", "Fərdi şrift", "Tətbiq et", "Şrift Windows-da quraşdırılmalıdır"],
+  ja: ["ターミナルのフォント", "標準", "カスタムフォント", "適用", "フォントは Windows にインストールされている必要があります"],
+};
+function fontText(index) { return (FONT_TEXT[locale] ?? FONT_TEXT.en)[index]; }
 
 function configureBaseTheme() {
   if (!config.theme || typeof config.theme !== "object") return;
@@ -1120,6 +1172,7 @@ let activeTabId = null;
 let tabSeq = 0;
 let pendingTabFocus = null;
 let restoringState = false;
+let searchState = null;
 
 let sshConnections = []; // [{ name, host, user, port, key }]
 let sshPath = "ssh"; // resolved by the backend
@@ -1135,6 +1188,26 @@ function showError(error) {
   notice.textContent = String(error);
   document.getElementById("error-notices")?.appendChild(notice);
   setTimeout(() => notice.remove(), 8000);
+}
+
+function fontFallback() {
+  return typeof config.fontFamily === "string" && config.fontFamily.trim()
+    ? config.fontFamily : "Consolas, monospace";
+}
+
+function fontStack() {
+  return fontChoice ? `"${fontChoice}", ${fontFallback()}` : fontFallback();
+}
+
+function setFontChoice(name) {
+  const next = String(name).trim();
+  if (next.length > 80 || /[\x00-\x1f"\\]/.test(next)) return false;
+  fontChoice = next;
+  for (const leaf of leaves.values()) leaf.term.options.fontFamily = fontStack();
+  const tab = tabs.get(activeTabId);
+  if (tab) requestAnimationFrame(() => fitTab(tab));
+  persistState();
+  return true;
 }
 
 // ---- tree helpers ----
@@ -1213,6 +1286,7 @@ function stateSnapshot() {
     locale,
     theme: themeId,
     fontSize,
+    fontChoice,
   };
 }
 
@@ -1247,7 +1321,7 @@ function b64ToBytes(b64) {
 function termOptions() {
   return {
     allowProposedApi: true,
-    fontFamily: config.fontFamily,
+    fontFamily: fontStack(),
     fontSize: fontSize,
     lineHeight: 1.2,
     cursorBlink: true,
@@ -1288,7 +1362,9 @@ async function makeLeaf(tab, profile) {
 
   const term = new Terminal(termOptions());
   const fit = new FitAddon();
+  const search = new SearchAddon();
   term.loadAddon(fit);
+  term.loadAddon(search);
   term.loadAddon(new WebLinksAddon());
   term.open(el);
   loadRenderer(term);
@@ -1318,6 +1394,7 @@ async function makeLeaf(tab, profile) {
     sessionId,
     term,
     fit,
+    search,
     el,
     profile,
     tab,
@@ -1373,6 +1450,7 @@ async function makeLeaf(tab, profile) {
   term.onData((data) => enqueueInput(leaf, data));
   if (config.copyOnSelect) {
     term.onSelectionChange(() => {
+      if (searchState?.leaf === leaf && document.activeElement?.closest("#search-bar")) return;
       const sel = term.getSelection();
       if (sel && sel.length > 0) clipboardWrite(sel).catch(() => {});
     });
@@ -1555,6 +1633,11 @@ function disposeLeaf(leaf, closeSession = true) {
   return Promise.resolve();
 }
 
+function createTabInCurrentDirectory() {
+  const profile = activeLeaf()?.profile;
+  return createTab(profile ? { ...profile } : defaultProfile());
+}
+
 async function splitLeaf(leaf, dir) {
   if (leaf.splitting || leaf.closed) return;
   leaf.splitting = true;
@@ -1598,6 +1681,7 @@ async function splitLeaf(leaf, dir) {
 
 async function closeLeaf(leaf) {
   if (leaf.closed || leaf.closing) return;
+  if (searchState?.leaf === leaf) closeSearch(false);
   leaf.closing = true;
   const tab = leaf.tab;
   if (leavesOf(tab.root).length <= 1) {
@@ -1624,6 +1708,7 @@ async function closeLeaf(leaf) {
 }
 
 function setActiveLeaf(leaf) {
+  if (searchState?.leaf !== leaf) closeSearch(false);
   const tab = leaf.tab;
   tab.activeLeaf = leaf;
   tab.profile = leaf.profile;
@@ -2002,6 +2087,7 @@ function placeMenu(menu, x, y) {
 function activate(id, fromCreation = false) {
   const tab = tabs.get(id);
   if (!tab || !tab.root) return;
+  if (activeTabId !== id) closeSearch(false);
   if (!fromCreation || pendingTabFocus === id) pendingTabFocus = null;
   for (const [, other] of tabs) {
     other.container.classList.remove("active");
@@ -2024,6 +2110,7 @@ function activate(id, fromCreation = false) {
 async function closeTab(id) {
   const tab = tabs.get(id);
   if (!tab || tab.closing) return;
+  if (searchState?.leaf.tab === tab) closeSearch(false);
   tab.closing = true;
   const order = [...tabs.values()].filter((candidate) => candidate.root || candidate.id === id).map((candidate) => candidate.id);
   const index = order.indexOf(id);
@@ -2047,6 +2134,58 @@ async function closeTab(id) {
 }
 
 // ---------------------------------------------------------------------------
+// Search the active pane's scrollback without sending keystrokes to the shell.
+// ---------------------------------------------------------------------------
+function closeSearch(refocus = true) {
+  if (!searchState) return;
+  searchState.subscription?.dispose();
+  searchState.leaf.search.clearDecorations();
+  searchState = null;
+  document.getElementById("search-bar").hidden = true;
+  document.getElementById("search-count").textContent = "";
+  if (refocus) activeLeaf()?.term.focus();
+}
+
+function searchStep(backward = false, incremental = false) {
+  if (!searchState) return;
+  const { leaf } = searchState;
+  const query = document.getElementById("search-input").value;
+  if (!query) {
+    leaf.search.clearDecorations();
+    document.getElementById("search-count").textContent = "";
+    return;
+  }
+  const options = { decorations: true, incremental };
+  const found = backward
+    ? leaf.search.findPrevious(query, options)
+    : leaf.search.findNext(query, options);
+  if (!found) document.getElementById("search-count").textContent = panelText("noMatches");
+}
+
+function openSearch() {
+  const leaf = activeLeaf();
+  if (!leaf) return;
+  if (searchState && searchState.leaf !== leaf) closeSearch(false);
+  const bar = document.getElementById("search-bar");
+  const input = document.getElementById("search-input");
+  if (!searchState) {
+    searchState = {
+      leaf,
+      subscription: leaf.search.onDidChangeResults(({ resultIndex, resultCount }) => {
+        if (searchState?.leaf !== leaf) return;
+        document.getElementById("search-count").textContent = resultCount
+          ? (resultIndex >= 0 ? `${resultIndex + 1} / ${resultCount}` : String(resultCount))
+          : panelText("noMatches");
+      }),
+    };
+    bar.hidden = false;
+    if (input.value) searchStep(false, true);
+  }
+  input.focus();
+  input.select();
+}
+
+// ---------------------------------------------------------------------------
 // App-level keyboard shortcuts. Handled on the window in the capture phase so
 // they fire before xterm (and before WebView2 can swallow combos like
 // Ctrl+Shift+T). Anything we don't claim here falls through to the terminal,
@@ -2058,11 +2197,11 @@ function installShortcuts() {
     (e) => {
       // Never hijack keys while editing a tab name.
       if (e.target instanceof HTMLInputElement) return;
-      if (document.getElementById("help-overlay") || document.getElementById("ssh-overlay")) return;
+      if (document.getElementById("help-overlay") || document.getElementById("ssh-overlay") || document.getElementById("settings-overlay")) return;
 
       const ctrl = e.ctrlKey;
       const shift = e.shiftKey;
-      const k = e.key.toLowerCase();
+      const k = shortcutKey(e);
 
       if ((k === "contextmenu" || (k === "f10" && shift)) && !ctrl && !e.altKey) {
         const leaf = activeLeaf();
@@ -2087,7 +2226,13 @@ function installShortcuts() {
         if (k === "t") {
           e.preventDefault();
           e.stopPropagation();
-          createTab().catch(showError);
+          createTabInCurrentDirectory().catch(showError);
+          return;
+        }
+        if (k === "f") {
+          e.preventDefault();
+          e.stopPropagation();
+          openSearch();
           return;
         }
         if (k === "w") {
@@ -2209,6 +2354,7 @@ function defaultProfile() {
 
 // Whether the Explorer "Open in Abergin" context-menu entry is registered.
 let explorerIntegration = false;
+let explorerIntegrationAvailable = false;
 
 // Last path segment of a directory — used as the tab title when opened via the
 // Explorer context menu.
@@ -2308,85 +2454,16 @@ function buildProfileMenu() {
   });
   menu.appendChild(addSsh);
 
-  // ---- Language and theme (expand inside the scrollable menu) ----
+  // ---- Settings + Help ----
   addSep();
-  const langLi = document.createElement("li");
-  langLi.className = "has-submenu";
-  const current = LANGUAGES.find((l) => l.code === locale)?.label ?? locale;
-  const langLabel = document.createElement("span");
-  langLabel.textContent = "🌐  " + tr("language") + ": " + current;
-  const arrow = document.createElement("span");
-  arrow.className = "submenu-arrow";
-  arrow.textContent = "⌄";
-  const sub = document.createElement("ul");
-  sub.className = "submenu";
-  for (const lang of LANGUAGES) {
-    const li = document.createElement("li");
-    li.className = "lang-item";
-    const check = document.createElement("span");
-    check.className = "lang-check";
-    check.textContent = lang.code === locale ? "✓" : "";
-    const name = document.createElement("span");
-    name.textContent = lang.label;
-    li.append(check, name);
-    li.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setProfileMenuOpen(false);
-      setLocale(lang.code);
-    });
-    sub.appendChild(li);
-  }
-  langLi.append(langLabel, arrow, sub);
-  langLi.setAttribute("aria-expanded", "false");
-  langLi.addEventListener("click", (event) => {
-    if (event.target.closest(".submenu")) return;
-    event.stopPropagation();
-    langLi.classList.toggle("open");
-    langLi.setAttribute("aria-expanded", String(langLi.classList.contains("open")));
+  const settings = document.createElement("li");
+  settings.className = "action";
+  settings.textContent = "⚙  " + panelText("settings");
+  settings.addEventListener("click", () => {
+    setProfileMenuOpen(false);
+    openSettings();
   });
-  menu.appendChild(langLi);
-
-  // ---- Theme (fly-out submenu) ----
-  const themeLi = document.createElement("li");
-  themeLi.className = "has-submenu";
-  const themeLabel = document.createElement("span");
-  themeLabel.textContent = "🎨  " + tr("theme") + ": " + (THEMES[themeId]?.label ?? themeId);
-  const tArrow = document.createElement("span");
-  tArrow.className = "submenu-arrow";
-  tArrow.textContent = "⌄";
-  const tSub = document.createElement("ul");
-  tSub.className = "submenu";
-  for (const [id, th] of Object.entries(THEMES)) {
-    const li = document.createElement("li");
-    li.className = "lang-item";
-    const check = document.createElement("span");
-    check.className = "lang-check";
-    check.textContent = id === themeId ? "✓" : "";
-    const sw = document.createElement("span");
-    sw.className = "swatch";
-    sw.style.background = th.ui.accent;
-    const name = document.createElement("span");
-    name.textContent = th.label;
-    li.append(check, sw, name);
-    li.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setProfileMenuOpen(false);
-      setTheme(id);
-    });
-    tSub.appendChild(li);
-  }
-  themeLi.append(themeLabel, tArrow, tSub);
-  themeLi.setAttribute("aria-expanded", "false");
-  themeLi.addEventListener("click", (event) => {
-    if (event.target.closest(".submenu")) return;
-    event.stopPropagation();
-    themeLi.classList.toggle("open");
-    themeLi.setAttribute("aria-expanded", String(themeLi.classList.contains("open")));
-  });
-  menu.appendChild(themeLi);
-
-  // ---- Help + Config ----
-  addSep();
+  menu.appendChild(settings);
   const help = document.createElement("li");
   help.className = "action";
   help.textContent = "❔  " + tr("help");
@@ -2396,35 +2473,6 @@ function buildProfileMenu() {
   });
   menu.appendChild(help);
 
-  // ---- Explorer "Open in Abergin" context-menu toggle ----
-  const shellInt = document.createElement("li");
-  shellInt.className = "action";
-  const renderShellInt = () => {
-    shellInt.textContent =
-      (explorerIntegration ? "☑" : "☐") + "  " + tr("shellIntegration");
-  };
-  renderShellInt();
-  shellInt.addEventListener("click", async (e) => {
-    e.stopPropagation(); // keep the menu open so the checkbox state is visible
-    const next = !explorerIntegration;
-    try {
-      await invoke("set_explorer_integration", { enabled: next });
-      explorerIntegration = next;
-      renderShellInt();
-    } catch (error) {
-      console.error("Failed to toggle Explorer integration:", error);
-    }
-  });
-  menu.appendChild(shellInt);
-
-  const edit = document.createElement("li");
-  edit.className = "action";
-  edit.textContent = "⚙  " + tr("editConfig");
-  edit.addEventListener("click", () => {
-    setProfileMenuOpen(false);
-    invoke("open_config").catch(showError);
-  });
-  menu.appendChild(edit);
   prepareMenu(menu, () => {
     setProfileMenuOpen(false);
     document.getElementById("profile-btn").focus();
@@ -2468,6 +2516,139 @@ function mountDialog(overlay, card, initialFocus) {
   });
   initialFocus.focus();
   return close;
+}
+
+function openSettings() {
+  document.getElementById("settings-overlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "settings-overlay";
+  const card = document.createElement("div");
+  card.className = "settings-card";
+  card.setAttribute("aria-labelledby", "settings-title");
+  card.innerHTML = `
+    <div class="settings-head">
+      <div><span class="settings-eyebrow">Abergin</span><h2 id="settings-title">${panelText("settings")}</h2></div>
+      <button type="button" class="settings-close" aria-label="${tr("tipClose")}">×</button>
+    </div>
+    <div class="settings-body">
+      <section><h3>${tr("language")}</h3><div class="settings-grid language-grid"></div></section>
+      <section><h3>${tr("theme")}</h3><div class="settings-grid theme-grid"></div></section>
+      <section><h3>${panelText("appearance")}</h3>
+        <div class="settings-row"><span>${panelText("fontSize")}</span>
+          <div class="settings-stepper"><button type="button" class="font-decrease" aria-label="−">−</button><output class="font-value">${fontSize}</output><button type="button" class="font-increase" aria-label="+">+</button></div>
+        </div>
+        <h4 class="settings-subhead">${fontText(0)}</h4>
+        <div class="settings-grid font-grid"></div>
+        <div class="font-custom-row"><input class="font-custom-input" maxlength="80" aria-label="${fontText(2)}" placeholder="${fontText(2)}" /><button type="button" class="font-apply">${fontText(3)}</button></div>
+        <p class="font-hint">${fontText(4)}</p>
+        <p class="form-error font-error" role="alert" hidden></p>
+      </section>
+      ${explorerIntegrationAvailable ? `<section><h3>${panelText("integrations")}</h3>
+        <div class="settings-row"><span>${tr("shellIntegration")}</span><button type="button" class="settings-toggle" aria-pressed="${explorerIntegration}">${explorerIntegration ? "✓" : ""}</button></div>
+      </section>` : ""}
+      <section><h3>${panelText("advanced")}</h3><button type="button" class="settings-advanced">${tr("editConfig")} ↗</button></section>
+    </div>`;
+
+  const close = mountDialog(overlay, card, card.querySelector(".settings-close"));
+  card.querySelector(".settings-close").addEventListener("click", close);
+
+  for (const lang of LANGUAGES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "settings-option";
+    button.setAttribute("aria-pressed", String(lang.code === locale));
+    button.textContent = lang.label;
+    button.addEventListener("click", () => {
+      if (lang.code === locale) return;
+      setLocale(lang.code);
+      close();
+      openSettings();
+    });
+    card.querySelector(".language-grid").appendChild(button);
+  }
+
+  for (const [id, theme] of Object.entries(THEMES)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "settings-option theme-option";
+    button.setAttribute("aria-pressed", String(id === themeId));
+    const swatch = document.createElement("span");
+    swatch.className = "theme-swatch";
+    swatch.style.background = theme.ui.bg;
+    swatch.style.borderColor = theme.ui.accent;
+    const label = document.createElement("span");
+    label.textContent = theme.label;
+    button.append(swatch, label);
+    button.addEventListener("click", () => {
+      setTheme(id);
+      for (const option of card.querySelectorAll(".theme-option")) option.setAttribute("aria-pressed", String(option === button));
+    });
+    card.querySelector(".theme-grid").appendChild(button);
+  }
+
+  for (const [selector, delta] of [[".font-decrease", -1], [".font-increase", 1]]) {
+    card.querySelector(selector).addEventListener("click", () => {
+      setFontSize(fontSize + delta);
+      card.querySelector(".font-value").textContent = String(fontSize);
+    });
+  }
+  const fontGrid = card.querySelector(".font-grid");
+  const customFontInput = card.querySelector(".font-custom-input");
+  if (fontChoice && !FONT_CHOICES.includes(fontChoice)) customFontInput.value = fontChoice;
+  const refreshFonts = () => {
+    for (const button of fontGrid.children) button.setAttribute("aria-pressed", String(button.dataset.font === fontChoice));
+    customFontInput.classList.toggle("selected", !!fontChoice && !FONT_CHOICES.includes(fontChoice));
+  };
+  for (const name of FONT_CHOICES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "settings-option font-option";
+    button.dataset.font = name;
+    button.textContent = name || fontText(1);
+    button.style.fontFamily = name ? `"${name}", ${fontFallback()}` : fontFallback();
+    button.addEventListener("click", () => {
+      setFontChoice(name);
+      customFontInput.value = "";
+      card.querySelector(".font-error").hidden = true;
+      refreshFonts();
+    });
+    fontGrid.appendChild(button);
+  }
+  refreshFonts();
+  const applyCustomFont = () => {
+    const name = customFontInput.value.trim();
+    const error = card.querySelector(".font-error");
+    if (!name || !setFontChoice(name)) {
+      error.textContent = fontText(2);
+      error.hidden = false;
+      return;
+    }
+    error.hidden = true;
+    refreshFonts();
+  };
+  card.querySelector(".font-apply").addEventListener("click", applyCustomFont);
+  customFontInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyCustomFont();
+    }
+  });
+  const toggle = card.querySelector(".settings-toggle");
+  toggle?.addEventListener("click", async () => {
+    toggle.disabled = true;
+    try {
+      const next = !explorerIntegration;
+      await invoke("set_explorer_integration", { enabled: next });
+      explorerIntegration = next;
+      toggle.setAttribute("aria-pressed", String(next));
+      toggle.textContent = next ? "✓" : "";
+    } catch (error) {
+      showError(error);
+    } finally {
+      toggle.disabled = false;
+    }
+  });
+  card.querySelector(".settings-advanced").addEventListener("click", () => invoke("open_config").catch(showError));
 }
 
 function openSshForm(existing = null) {
@@ -2542,7 +2723,7 @@ function openHelp() {
     {
       title: tr("hgTabs"),
       rows: [
-        ["Ctrl+Shift+T", tr("hNewTab")],
+        ["Ctrl+Shift+T", panelText("currentDirectory")],
         ["Ctrl+Shift+W", tr("hClosePane")],
         ["Ctrl+Tab", tr("hSwitchTab")],
         ["Alt+1…9", tr("hJumpTab")],
@@ -2565,6 +2746,7 @@ function openHelp() {
       rows: [
         ["Ctrl+Shift+C", tr("copy")],
         ["Ctrl+Shift+V", tr("paste")],
+        ["Ctrl+Shift+F", panelText("search")],
         [tr("hSelect"), tr("hSelectCopy")],
         [tr("hMiddle"), tr("paste")],
         ["Ctrl+W / Ctrl+A / Ctrl+R …", tr("hBash")],
@@ -2621,6 +2803,8 @@ async function main() {
   // Restore theme + zoom before any terminal is created.
   const savedFontSize = Number(saved.fontSize ?? config.fontSize);
   fontSize = Number.isFinite(savedFontSize) ? Math.max(6, Math.min(40, savedFontSize)) : 13;
+  fontChoice = typeof saved.fontChoice === "string" && saved.fontChoice.length <= 80 && !/[\x00-\x1f"\\]/.test(saved.fontChoice)
+    ? saved.fontChoice.trim() : "";
   themeId = THEMES[saved.theme] ? saved.theme : "tokyo-night";
   applyTheme(THEMES[themeId]);
 
@@ -2636,7 +2820,10 @@ async function main() {
     }
   });
 
-  explorerIntegration = await invoke("get_explorer_integration").catch(() => false);
+  explorerIntegrationAvailable = await invoke("explorer_integration_available").catch(() => false);
+  explorerIntegration = explorerIntegrationAvailable
+    ? await invoke("get_explorer_integration").catch(() => false)
+    : false;
   buildProfileMenu();
 
   // Explorer "Open in Abergin" on an already-running instance → new tab there.
@@ -2645,7 +2832,25 @@ async function main() {
     if (dir) openCwdTab(dir).catch(() => {});
   });
 
-  document.getElementById("new-tab").addEventListener("click", () => createTab().catch(showError));
+  document.getElementById("new-tab").addEventListener("click", () => createTabInCurrentDirectory().catch(showError));
+  const searchInput = document.getElementById("search-input");
+  searchInput.addEventListener("input", () => searchStep(false, true));
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchStep(event.shiftKey);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch();
+    }
+  });
+  for (const [id, backward] of [["search-prev", true], ["search-next", false]]) {
+    document.getElementById(id).addEventListener("click", () => {
+      searchStep(backward);
+      searchInput.focus();
+    });
+  }
+  document.getElementById("search-close").addEventListener("click", () => closeSearch());
 
   // Live tab reordering while dragging a tab over the strip.
   $tabs.addEventListener("dragover", (e) => {

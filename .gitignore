@@ -7,5 +7,7 @@ app-icon.png
 *.cer
 src-tauri/tauri.signing.conf.json
 src-tauri/target/
+src-tauri/target-store/
+store/out/
 src-tauri/gen/schemas/
 .claude/settings.local.json
