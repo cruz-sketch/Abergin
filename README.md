@@ -65,8 +65,9 @@ tiny (~1.3 MB installer) by using the system WebView2 instead of bundling Chromi
 - **Rendering** — the DOM renderer is the default for stable text in rapidly
   repainted terminal apps. Set `"renderer": "webgl"` in `config.json` to opt in to GPU rendering.
 - **Text zoom** — `Ctrl +/-/0` or `Ctrl`+wheel.
-- **14 languages** — Ukrainian, English, Deutsch, Français, Español, Polski,
-  Čeština, Lietuvių, Latviešu, Eesti, Norsk, Română (Moldova), Azərbaycan, 日本語.
+- **16 languages** — Ukrainian, English, Deutsch, Français, Español, Polski,
+  Čeština, Lietuvių, Latviešu, Eesti, Dansk, Norsk, Nederlands,
+  Română (Moldova), Azərbaycan, 日本語.
   On first launch the language is picked from the OS locale (English otherwise),
   then changeable in Settings.
 - **Help** — `F1`.

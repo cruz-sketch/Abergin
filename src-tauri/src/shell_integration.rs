@@ -91,11 +91,14 @@ fn exe_path() -> Result<String, String> {
 
 #[tauri::command]
 #[cfg(all(windows, not(feature = "store")))]
-pub fn set_explorer_integration(enabled: bool) -> Result<(), String> {
+pub fn set_explorer_integration(enabled: bool, label: Option<String>) -> Result<(), String> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     if enabled {
         let exe = exe_path()?;
-        let label = "Open in Abergin";
+        let label = label
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("Open in Abergin");
         let command = format!("\"{}\" \"%V\"", exe);
         for base in ROOTS {
             let (key, _) = hkcu.create_subkey(base).map_err(|e| e.to_string())?;
@@ -128,7 +131,7 @@ pub fn get_explorer_integration() -> bool {
 // Non-Windows stubs so the crate still type-checks off-Windows.
 #[tauri::command]
 #[cfg(any(not(windows), feature = "store"))]
-pub fn set_explorer_integration(_enabled: bool) -> Result<(), String> {
+pub fn set_explorer_integration(_enabled: bool, _label: Option<String>) -> Result<(), String> {
     Err("Explorer integration is unavailable in this build".into())
 }
 
@@ -152,7 +155,7 @@ mod tests {
     fn store_build_never_registers_explorer_commands() {
         assert!(!super::explorer_integration_available());
         assert!(!super::get_explorer_integration());
-        assert!(super::set_explorer_integration(true).is_err());
+        assert!(super::set_explorer_integration(true, None).is_err());
     }
 
     #[test]

@@ -65,9 +65,9 @@
 - **Рендеринг** — типовий DOM-рендерер стабільно відображає текст у програмах, що
   часто перемальовують екран. Для GPU-рендерингу встанови `"renderer": "webgl"` у `config.json`.
 - **Масштаб тексту** — `Ctrl +/-/0` або `Ctrl`+колесо.
-- **Багатомовність** — 14 мов: українська, English, Deutsch, Français, Español,
-  Polski, Čeština, Lietuvių, Latviešu, Eesti, Norsk, Română (Moldova),
-  Azərbaycan, 日本語. При першому запуску мова визначається з локалі ОС
+- **Багатомовність** — 16 мов: українська, English, Deutsch, Français, Español,
+  Polski, Čeština, Lietuvių, Latviešu, Eesti, Dansk, Norsk, Nederlands,
+  Română (Moldova), Azərbaycan, 日本語. При першому запуску мова визначається з локалі ОС
   (інакше — англійська); потім її можна змінити в Налаштуваннях.
 - **Довідка** — `F1`.
 - **Вигляд** — frameless-вікно, кастомний титлбар, суцільний фон (без acrylic — він

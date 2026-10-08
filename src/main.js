@@ -35,7 +35,9 @@ const LANGUAGES = [
   { code: "lt", label: "Lietuvių" },
   { code: "lv", label: "Latviešu" },
   { code: "et", label: "Eesti" },
+  { code: "da", label: "Dansk" },
   { code: "no", label: "Norsk" },
+  { code: "nl", label: "Nederlands" },
   { code: "ro", label: "Română (Moldova)" },
   { code: "az", label: "Azərbaycan" },
   { code: "ja", label: "日本語" },
@@ -86,7 +88,7 @@ const I18N = {
     delete: "Видалити",
     editConfig: "Редагувати config.json",
     shellIntegration: "Контекстне меню Провідника",
-    langSection: "МОВА",
+    openInAbergin: "Відкрити в Abergin",
     sshTitle: "Нове SSH-підключення",
     fName: "Назва",
     fHost: "Хост",
@@ -98,6 +100,7 @@ const I18N = {
     phName: "Мій сервер",
     phHost: "192.168.0.10 або example.com",
     processExited: "процес завершено",
+    startupFailed: "Не вдалося запустити Abergin",
     tipNewTab: "Нова вкладка (Ctrl+Shift+T)",
     tipMenu: "Меню",
     tipMin: "Згорнути",
@@ -148,7 +151,7 @@ const I18N = {
     delete: "Delete",
     editConfig: "Edit config.json",
     shellIntegration: "Explorer context menu",
-    langSection: "LANGUAGE",
+    openInAbergin: "Open in Abergin",
     sshTitle: "New SSH connection",
     fName: "Name",
     fHost: "Host",
@@ -160,6 +163,7 @@ const I18N = {
     phName: "My server",
     phHost: "192.168.0.10 or example.com",
     processExited: "process exited",
+    startupFailed: "Abergin failed to start",
     tipNewTab: "New tab (Ctrl+Shift+T)",
     tipMenu: "Menu",
     tipMin: "Minimize",
@@ -209,7 +213,8 @@ const I18N = {
     addSsh: "SSH-Verbindung hinzufügen",
     delete: "Löschen",
     editConfig: "config.json bearbeiten",
-    langSection: "SPRACHE",
+    shellIntegration: "Explorer-Kontextmenü",
+    openInAbergin: "In Abergin öffnen",
     sshTitle: "Neue SSH-Verbindung",
     fName: "Name",
     fHost: "Host",
@@ -221,6 +226,7 @@ const I18N = {
     phName: "Mein Server",
     phHost: "192.168.0.10 oder example.com",
     processExited: "Prozess beendet",
+    startupFailed: "Abergin konnte nicht gestartet werden",
     tipNewTab: "Neuer Tab (Ctrl+Shift+T)",
     tipMenu: "Menü",
     tipMin: "Minimieren",
@@ -270,7 +276,8 @@ const I18N = {
     addSsh: "Ajouter une connexion SSH",
     delete: "Supprimer",
     editConfig: "Modifier config.json",
-    langSection: "LANGUE",
+    shellIntegration: "Menu contextuel de l’Explorateur",
+    openInAbergin: "Ouvrir dans Abergin",
     sshTitle: "Nouvelle connexion SSH",
     fName: "Nom",
     fHost: "Hôte",
@@ -282,6 +289,7 @@ const I18N = {
     phName: "Mon serveur",
     phHost: "192.168.0.10 ou example.com",
     processExited: "processus terminé",
+    startupFailed: "Impossible de démarrer Abergin",
     tipNewTab: "Nouvel onglet (Ctrl+Shift+T)",
     tipMenu: "Menu",
     tipMin: "Réduire",
@@ -331,7 +339,8 @@ const I18N = {
     addSsh: "Añadir conexión SSH",
     delete: "Eliminar",
     editConfig: "Editar config.json",
-    langSection: "IDIOMA",
+    shellIntegration: "Menú contextual del Explorador",
+    openInAbergin: "Abrir en Abergin",
     sshTitle: "Nueva conexión SSH",
     fName: "Nombre",
     fHost: "Host",
@@ -343,6 +352,7 @@ const I18N = {
     phName: "Mi servidor",
     phHost: "192.168.0.10 o example.com",
     processExited: "proceso finalizado",
+    startupFailed: "No se pudo iniciar Abergin",
     tipNewTab: "Nueva pestaña (Ctrl+Shift+T)",
     tipMenu: "Menú",
     tipMin: "Minimizar",
@@ -392,6 +402,8 @@ const I18N = {
     addSsh: "Dodaj połączenie SSH",
     delete: "Usuń",
     editConfig: "Edytuj config.json",
+    shellIntegration: "Menu kontekstowe Eksploratora",
+    openInAbergin: "Otwórz w Abergin",
     sshTitle: "Nowe połączenie SSH",
     fName: "Nazwa",
     fHost: "Host",
@@ -403,6 +415,7 @@ const I18N = {
     phName: "Mój serwer",
     phHost: "192.168.0.10 lub example.com",
     processExited: "proces zakończony",
+    startupFailed: "Nie udało się uruchomić Abergin",
     tipNewTab: "Nowa karta (Ctrl+Shift+T)",
     tipMenu: "Menu",
     tipMin: "Minimalizuj",
@@ -452,6 +465,8 @@ const I18N = {
     addSsh: "Přidat připojení SSH",
     delete: "Odstranit",
     editConfig: "Upravit config.json",
+    shellIntegration: "Kontextová nabídka Průzkumníka",
+    openInAbergin: "Otevřít v Abergin",
     sshTitle: "Nové připojení SSH",
     fName: "Název",
     fHost: "Host",
@@ -463,6 +478,7 @@ const I18N = {
     phName: "Můj server",
     phHost: "192.168.0.10 nebo example.com",
     processExited: "proces ukončen",
+    startupFailed: "Abergin se nepodařilo spustit",
     tipNewTab: "Nová karta (Ctrl+Shift+T)",
     tipMenu: "Nabídka",
     tipMin: "Minimalizovat",
@@ -512,6 +528,8 @@ const I18N = {
     addSsh: "Pridėti SSH ryšį",
     delete: "Ištrinti",
     editConfig: "Redaguoti config.json",
+    shellIntegration: "Failų naršyklės kontekstinis meniu",
+    openInAbergin: "Atidaryti su Abergin",
     sshTitle: "Naujas SSH ryšys",
     fName: "Pavadinimas",
     fHost: "Host",
@@ -523,6 +541,7 @@ const I18N = {
     phName: "Mano serveris",
     phHost: "192.168.0.10 arba example.com",
     processExited: "procesas baigtas",
+    startupFailed: "Nepavyko paleisti Abergin",
     tipNewTab: "Nauja kortelė (Ctrl+Shift+T)",
     tipMenu: "Meniu",
     tipMin: "Sumažinti",
@@ -572,6 +591,8 @@ const I18N = {
     addSsh: "Pievienot SSH savienojumu",
     delete: "Dzēst",
     editConfig: "Rediģēt config.json",
+    shellIntegration: "Failu pārlūka kontekstizvēlne",
+    openInAbergin: "Atvērt programmā Abergin",
     sshTitle: "Jauns SSH savienojums",
     fName: "Nosaukums",
     fHost: "Host",
@@ -583,6 +604,7 @@ const I18N = {
     phName: "Mans serveris",
     phHost: "192.168.0.10 vai example.com",
     processExited: "process pabeigts",
+    startupFailed: "Neizdevās palaist Abergin",
     tipNewTab: "Jauna cilne (Ctrl+Shift+T)",
     tipMenu: "Izvēlne",
     tipMin: "Minimizēt",
@@ -632,6 +654,8 @@ const I18N = {
     addSsh: "Lisa SSH-ühendus",
     delete: "Kustuta",
     editConfig: "Redigeeri config.json",
+    shellIntegration: "Failihalduri kontekstimenüü",
+    openInAbergin: "Ava Aberginis",
     sshTitle: "Uus SSH-ühendus",
     fName: "Nimi",
     fHost: "Host",
@@ -643,11 +667,75 @@ const I18N = {
     phName: "Minu server",
     phHost: "192.168.0.10 või example.com",
     processExited: "protsess lõpetatud",
+    startupFailed: "Abergini käivitamine nurjus",
     tipNewTab: "Uus kaart (Ctrl+Shift+T)",
     tipMenu: "Menüü",
     tipMin: "Minimeeri",
     tipMax: "Maksimeeri",
     tipClose: "Sulge",
+  },
+  da: {
+    rename: "Omdøb",
+    duplicate: "Duplikér",
+    closeTab: "Luk fane",
+    copy: "Kopiér",
+    paste: "Indsæt",
+    selectAll: "Markér alt",
+    splitRight: "Opdel til højre",
+    splitDown: "Opdel nedad",
+    closePane: "Luk rude",
+    language: "Sprog",
+    help: "Hjælp",
+    hIntro:
+      "En elegant Windows-terminal med profiler, faner, opdelte ruder, SSH, kommandohistorik og bash-genveje.",
+    hgTabs: "Faner",
+    hgPanes: "Ruder",
+    hgEdit: "Redigering",
+    hNewTab: "Ny fane",
+    hClosePane: "Luk rude / fane",
+    hSwitchTab: "Skift fane",
+    hJumpTab: "Gå til fane N",
+    hMouseDbl: "Dobbeltklik på en fane",
+    hRename: "Omdøb fane",
+    hMouseDrag: "Træk en fane",
+    hReorder: "Skift rækkefølge på faner",
+    hFocusPane: "Flyt fokus mellem ruder",
+    hMouseClick: "Klik på en rude",
+    hFocusClick: "Fokusér ruden",
+    hMouseSplitter: "Træk skillelinjen",
+    hResize: "Tilpas rudernes størrelse",
+    hSelect: "Markér med musen",
+    hSelectCopy: "Kopiér markeringen",
+    hMiddle: "Midterste museknap",
+    hBash: "Bash-genveje (slet ord, gå til linjestart, søg i historik…)",
+    theme: "Tema",
+    hgView: "Visning",
+    hZoom: "Forstør / formindsk tekst",
+    hZoomReset: "Nulstil zoom",
+    hWheel: "Zoom tekst",
+    sshSection: "SSH-FORBINDELSER",
+    addSsh: "Tilføj SSH-forbindelse",
+    delete: "Slet",
+    editConfig: "Rediger config.json",
+    shellIntegration: "Genvejsmenu i Stifinder",
+    openInAbergin: "Åbn i Abergin",
+    sshTitle: "Ny SSH-forbindelse",
+    fName: "Navn",
+    fHost: "Vært",
+    fUser: "Bruger",
+    fPort: "Port",
+    fKey: "Nøgle (valgfri)",
+    cancel: "Annuller",
+    save: "Gem",
+    phName: "Min server",
+    phHost: "192.168.0.10 eller example.com",
+    processExited: "processen er afsluttet",
+    startupFailed: "Abergin kunne ikke startes",
+    tipNewTab: "Ny fane (Ctrl+Shift+T)",
+    tipMenu: "Menu",
+    tipMin: "Minimer",
+    tipMax: "Maksimer",
+    tipClose: "Luk",
   },
   no: {
     rename: "Gi nytt navn",
@@ -692,6 +780,8 @@ const I18N = {
     addSsh: "Legg til SSH-tilkobling",
     delete: "Slett",
     editConfig: "Rediger config.json",
+    shellIntegration: "Kontekstmeny i Filutforsker",
+    openInAbergin: "Åpne i Abergin",
     sshTitle: "Ny SSH-tilkobling",
     fName: "Navn",
     fHost: "Vert",
@@ -703,11 +793,75 @@ const I18N = {
     phName: "Min server",
     phHost: "192.168.0.10 eller example.com",
     processExited: "prosess avsluttet",
+    startupFailed: "Kunne ikke starte Abergin",
     tipNewTab: "Ny fane (Ctrl+Shift+T)",
     tipMenu: "Meny",
     tipMin: "Minimer",
     tipMax: "Maksimer",
     tipClose: "Lukk",
+  },
+  nl: {
+    rename: "Hernoemen",
+    duplicate: "Dupliceren",
+    closeTab: "Tabblad sluiten",
+    copy: "Kopiëren",
+    paste: "Plakken",
+    selectAll: "Alles selecteren",
+    splitRight: "Rechts splitsen",
+    splitDown: "Onder splitsen",
+    closePane: "Paneel sluiten",
+    language: "Taal",
+    help: "Help",
+    hIntro:
+      "Een stijlvolle, native terminal voor Windows. Profielen, tabbladen, gesplitste panelen, SSH, opdrachtgeschiedenis en bash-sneltoetsen.",
+    hgTabs: "Tabbladen",
+    hgPanes: "Panelen",
+    hgEdit: "Bewerken",
+    hNewTab: "Nieuw tabblad",
+    hClosePane: "Paneel / tabblad sluiten",
+    hSwitchTab: "Van tabblad wisselen",
+    hJumpTab: "Ga naar tabblad N",
+    hMouseDbl: "Dubbelklik op een tabblad",
+    hRename: "Tabblad hernoemen",
+    hMouseDrag: "Sleep een tabblad",
+    hReorder: "Volgorde van tabbladen wijzigen",
+    hFocusPane: "Focus tussen panelen verplaatsen",
+    hMouseClick: "Klik op een paneel",
+    hFocusClick: "Paneel activeren",
+    hMouseSplitter: "Sleep de scheidingslijn",
+    hResize: "Grootte van panelen wijzigen",
+    hSelect: "Selecteren met de muis",
+    hSelectCopy: "Selectie kopiëren",
+    hMiddle: "Middelste muisknop",
+    hBash: "Bash-sneltoetsen (woord verwijderen, naar regelbegin, geschiedenis doorzoeken…)",
+    theme: "Thema",
+    hgView: "Weergave",
+    hZoom: "Tekst vergroten / verkleinen",
+    hZoomReset: "Zoom herstellen",
+    hWheel: "Tekst zoomen",
+    sshSection: "SSH-VERBINDINGEN",
+    addSsh: "SSH-verbinding toevoegen",
+    delete: "Verwijderen",
+    editConfig: "config.json bewerken",
+    shellIntegration: "Contextmenu van Verkenner",
+    openInAbergin: "Openen in Abergin",
+    sshTitle: "Nieuwe SSH-verbinding",
+    fName: "Naam",
+    fHost: "Host",
+    fUser: "Gebruiker",
+    fPort: "Poort",
+    fKey: "Sleutel (optioneel)",
+    cancel: "Annuleren",
+    save: "Opslaan",
+    phName: "Mijn server",
+    phHost: "192.168.0.10 of example.com",
+    processExited: "proces beëindigd",
+    startupFailed: "Abergin kon niet worden gestart",
+    tipNewTab: "Nieuw tabblad (Ctrl+Shift+T)",
+    tipMenu: "Menu",
+    tipMin: "Minimaliseren",
+    tipMax: "Maximaliseren",
+    tipClose: "Sluiten",
   },
   ro: {
     rename: "Redenumește",
@@ -747,11 +901,13 @@ const I18N = {
     hgView: "Vizualizare",
     hZoom: "Mărește / micșorează textul",
     hZoomReset: "Resetează zoomul",
-    hWheel: "Zoom text",
+    hWheel: "Mărește sau micșorează textul",
     sshSection: "CONEXIUNI SSH",
     addSsh: "Adaugă o conexiune SSH",
     delete: "Șterge",
     editConfig: "Editează config.json",
+    shellIntegration: "Meniul contextual din Explorer",
+    openInAbergin: "Deschide în Abergin",
     sshTitle: "Conexiune SSH nouă",
     fName: "Nume",
     fHost: "Gazdă",
@@ -763,6 +919,7 @@ const I18N = {
     phName: "Serverul meu",
     phHost: "192.168.0.10 sau example.com",
     processExited: "proces încheiat",
+    startupFailed: "Abergin nu a putut fi pornit",
     tipNewTab: "Filă nouă (Ctrl+Shift+T)",
     tipMenu: "Meniu",
     tipMin: "Minimizează",
@@ -812,6 +969,8 @@ const I18N = {
     addSsh: "SSH bağlantısı əlavə et",
     delete: "Sil",
     editConfig: "config.json redaktə et",
+    shellIntegration: "Fayl bələdçisinin kontekst menyusu",
+    openInAbergin: "Abergin-də aç",
     sshTitle: "Yeni SSH bağlantısı",
     fName: "Ad",
     fHost: "Host",
@@ -823,6 +982,7 @@ const I18N = {
     phName: "Mənim serverim",
     phHost: "192.168.0.10 və ya example.com",
     processExited: "proses bitdi",
+    startupFailed: "Abergin işə salına bilmədi",
     tipNewTab: "Yeni tab (Ctrl+Shift+T)",
     tipMenu: "Menyu",
     tipMin: "Kiçilt",
@@ -872,6 +1032,8 @@ const I18N = {
     addSsh: "SSH 接続を追加",
     delete: "削除",
     editConfig: "config.json を編集",
+    shellIntegration: "エクスプローラーのコンテキストメニュー",
+    openInAbergin: "Abergin で開く",
     sshTitle: "新しい SSH 接続",
     fName: "名前",
     fHost: "ホスト",
@@ -883,6 +1045,7 @@ const I18N = {
     phName: "マイサーバー",
     phHost: "192.168.0.10 または example.com",
     processExited: "プロセスが終了しました",
+    startupFailed: "Abergin を起動できませんでした",
     tipNewTab: "新しいタブ (Ctrl+Shift+T)",
     tipMenu: "メニュー",
     tipMin: "最小化",
@@ -891,7 +1054,7 @@ const I18N = {
   },
 };
 
-let locale = "en";
+let locale = detectLocale();
 
 const SSH_FORM_TEXT = {
   uk: { edit: "Редагувати SSH-підключення", action: "Редагувати", host: "Вкажіть хост без пробілів і дефіса на початку.", port: "Вкажіть порт від 1 до 65535." },
@@ -904,7 +1067,9 @@ const SSH_FORM_TEXT = {
   lt: { edit: "Redaguoti SSH ryšį", action: "Redaguoti", host: "Įveskite serverį be tarpų ir pradinio brūkšnelio.", port: "Įveskite prievadą nuo 1 iki 65535." },
   lv: { edit: "Rediģēt SSH savienojumu", action: "Rediģēt", host: "Ievadiet resursdatoru bez atstarpēm un sākuma defises.", port: "Ievadiet portu no 1 līdz 65535." },
   et: { edit: "Muuda SSH-ühendust", action: "Muuda", host: "Sisesta host ilma tühikute ja alguskriipsuta.", port: "Sisesta port vahemikus 1 kuni 65535." },
+  da: { edit: "Rediger SSH-forbindelse", action: "Rediger", host: "Indtast en vært uden mellemrum eller bindestreg i starten.", port: "Indtast en port fra 1 til 65535." },
   no: { edit: "Rediger SSH-tilkobling", action: "Rediger", host: "Skriv inn vert uten mellomrom eller innledende bindestrek.", port: "Skriv inn en port fra 1 til 65535." },
+  nl: { edit: "SSH-verbinding bewerken", action: "Bewerken", host: "Voer een host in zonder spaties of een koppelteken aan het begin.", port: "Voer een poortnummer in van 1 tot 65535." },
   ro: { edit: "Editează conexiunea SSH", action: "Editează", host: "Introdu un host fără spații sau cratimă la început.", port: "Introdu un port între 1 și 65535." },
   az: { edit: "SSH bağlantısını redaktə et", action: "Redaktə et", host: "Boşluqsuz və başlanğıc tiresiz host daxil edin.", port: "1-dən 65535-ə qədər port daxil edin." },
   ja: { edit: "SSH 接続を編集", action: "編集", host: "空白や先頭のハイフンを含まないホストを入力してください。", port: "1～65535 のポートを入力してください。" },
@@ -936,6 +1101,7 @@ function detectLocale() {
 // Refresh static UI chrome (titlebar tooltips) for the current locale.
 function applyI18n() {
   document.documentElement.lang = locale;
+  document.getElementById("tabs").setAttribute("aria-label", tr("hgTabs"));
   const setTitle = (id, key) => {
     const el = document.getElementById(id);
     if (el) {
@@ -970,6 +1136,7 @@ function setLocale(code) {
   applyI18n();
   buildProfileMenu();
   persistState();
+  if (explorerIntegration) setExplorerIntegration(true).catch(showError);
 }
 
 // ---------------------------------------------------------------------------
@@ -1069,7 +1236,9 @@ const PANEL_TEXT = {
   lt: { settings: "Nustatymai", appearance: "Išvaizda", integrations: "Integracijos", advanced: "Išplėstiniai", fontSize: "Šrifto dydis", search: "Ieškoti terminale", searchPlaceholder: "Ieškoti išvestyje…", previous: "Ankstesnis rezultatas", next: "Kitas rezultatas", noMatches: "Nėra rezultatų", currentDirectory: "Naujas skirtukas dabartiniame aplanke" },
   lv: { settings: "Iestatījumi", appearance: "Izskats", integrations: "Integrācijas", advanced: "Papildu", fontSize: "Fonta lielums", search: "Meklēt terminālī", searchPlaceholder: "Meklēt izvadē…", previous: "Iepriekšējais rezultāts", next: "Nākamais rezultāts", noMatches: "Nav rezultātu", currentDirectory: "Jauna cilne pašreizējā mapē" },
   et: { settings: "Seaded", appearance: "Välimus", integrations: "Integratsioonid", advanced: "Täpsemad", fontSize: "Fondi suurus", search: "Otsi terminalist", searchPlaceholder: "Otsi väljundist…", previous: "Eelmine vaste", next: "Järgmine vaste", noMatches: "Vasteid pole", currentDirectory: "Uus kaart praeguses kaustas" },
+  da: { settings: "Indstillinger", appearance: "Udseende", integrations: "Integrationer", advanced: "Avanceret", fontSize: "Skriftstørrelse", search: "Søg i terminalen", searchPlaceholder: "Søg i terminaloutput…", previous: "Forrige søgeresultat", next: "Næste søgeresultat", noMatches: "Ingen søgeresultater", currentDirectory: "Ny fane i den aktuelle mappe" },
   no: { settings: "Innstillinger", appearance: "Utseende", integrations: "Integrasjoner", advanced: "Avansert", fontSize: "Skriftstørrelse", search: "Søk i terminalen", searchPlaceholder: "Søk i utdata…", previous: "Forrige treff", next: "Neste treff", noMatches: "Ingen treff", currentDirectory: "Ny fane i gjeldende mappe" },
+  nl: { settings: "Instellingen", appearance: "Uiterlijk", integrations: "Integraties", advanced: "Geavanceerd", fontSize: "Lettergrootte", search: "Zoeken in terminal", searchPlaceholder: "Zoeken in terminaluitvoer…", previous: "Vorig zoekresultaat", next: "Volgend zoekresultaat", noMatches: "Geen zoekresultaten", currentDirectory: "Nieuw tabblad in huidige map" },
   ro: { settings: "Setări", appearance: "Aspect", integrations: "Integrări", advanced: "Avansat", fontSize: "Dimensiunea fontului", search: "Caută în terminal", searchPlaceholder: "Caută în ieșire…", previous: "Rezultatul anterior", next: "Rezultatul următor", noMatches: "Niciun rezultat", currentDirectory: "Filă nouă în directorul curent" },
   az: { settings: "Parametrlər", appearance: "Görünüş", integrations: "İnteqrasiyalar", advanced: "Əlavə", fontSize: "Şrift ölçüsü", search: "Terminalda axtar", searchPlaceholder: "Çıxışda axtar…", previous: "Əvvəlki nəticə", next: "Növbəti nəticə", noMatches: "Nəticə yoxdur", currentDirectory: "Cari qovluqda yeni tab" },
   ja: { settings: "設定", appearance: "外観", integrations: "連携", advanced: "詳細", fontSize: "文字サイズ", search: "ターミナル内を検索", searchPlaceholder: "出力を検索…", previous: "前の一致", next: "次の一致", noMatches: "一致なし", currentDirectory: "現在のディレクトリで新しいタブ" },
@@ -1087,7 +1256,9 @@ const FONT_TEXT = {
   lt: ["Terminalo šriftas", "Numatytasis", "Pasirinktas šriftas", "Taikyti", "Šriftas turi būti įdiegtas sistemoje Windows"],
   lv: ["Termināļa fonts", "Noklusējuma", "Pielāgots fonts", "Lietot", "Fontam jābūt instalētam Windows"],
   et: ["Terminali font", "Vaikimisi", "Kohandatud font", "Rakenda", "Font peab olema Windowsisse installitud"],
+  da: ["Terminalskrifttype", "Systemstandard", "Brugerdefineret skrifttype", "Anvend", "Skrifttypen skal være installeret i Windows"],
   no: ["Terminalskrift", "Systemstandard", "Egen skrifttype", "Bruk", "Skrifttypen må være installert i Windows"],
+  nl: ["Terminallettertype", "Systeemstandaard", "Aangepast lettertype", "Toepassen", "Het lettertype moet in Windows zijn geïnstalleerd"],
   ro: ["Font terminal", "Implicit", "Font personalizat", "Aplică", "Fontul trebuie instalat în Windows"],
   az: ["Terminal şrifti", "Standart", "Fərdi şrift", "Tətbiq et", "Şrift Windows-da quraşdırılmalıdır"],
   ja: ["ターミナルのフォント", "標準", "カスタムフォント", "適用", "フォントは Windows にインストールされている必要があります"],
@@ -2355,6 +2526,16 @@ function defaultProfile() {
 // Whether the Explorer "Open in Abergin" context-menu entry is registered.
 let explorerIntegration = false;
 let explorerIntegrationAvailable = false;
+let explorerIntegrationUpdate = Promise.resolve();
+
+function setExplorerIntegration(enabled) {
+  const label = tr("openInAbergin");
+  const update = explorerIntegrationUpdate.catch(() => {}).then(() =>
+    invoke("set_explorer_integration", { enabled, label })
+  );
+  explorerIntegrationUpdate = update;
+  return update;
+}
 
 // Last path segment of a directory — used as the tab title when opened via the
 // Explorer context menu.
@@ -2638,7 +2819,7 @@ function openSettings() {
     toggle.disabled = true;
     try {
       const next = !explorerIntegration;
-      await invoke("set_explorer_integration", { enabled: next });
+      await setExplorerIntegration(next);
       explorerIntegration = next;
       toggle.setAttribute("aria-pressed", String(next));
       toggle.textContent = next ? "✓" : "";
@@ -2824,6 +3005,7 @@ async function main() {
   explorerIntegration = explorerIntegrationAvailable
     ? await invoke("get_explorer_integration").catch(() => false)
     : false;
+  if (explorerIntegration) setExplorerIntegration(true).catch(showError);
   buildProfileMenu();
 
   // Explorer "Open in Abergin" on an already-running instance → new tab there.
@@ -3002,10 +3184,11 @@ async function main() {
   }
 }
 
+applyI18n();
 main().catch((error) => {
   console.error("Failed to start Abergin:", error);
   const message = document.createElement("pre");
   message.className = "fatal-error";
-  message.textContent = `Abergin failed to start:\n${String(error)}`;
+  message.textContent = `${tr("startupFailed")}:\n${String(error)}`;
   document.body.appendChild(message);
 });
