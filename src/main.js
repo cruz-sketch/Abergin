@@ -8,6 +8,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import pkg from "../package.json";
 import { cwdFromCmdOsc, cwdFromOsc7, cwdFromWslOsc, restoreProfile, serializeProfile, sessionArgs, sshProfile } from "./session-profile.js";
+import { serializeRestorableNode } from "./session-state.js";
 import { shortcutKey } from "./shortcuts.js";
 
 import { invoke } from "@tauri-apps/api/core";
@@ -100,6 +101,8 @@ const I18N = {
     phName: "Мій сервер",
     phHost: "192.168.0.10 або example.com",
     processExited: "процес завершено",
+    restart: "Перезапустити",
+    exitCode: "Код завершення",
     startupFailed: "Не вдалося запустити Abergin",
     tipNewTab: "Нова вкладка (Ctrl+Shift+T)",
     tipMenu: "Меню",
@@ -163,6 +166,8 @@ const I18N = {
     phName: "My server",
     phHost: "192.168.0.10 or example.com",
     processExited: "process exited",
+    restart: "Restart",
+    exitCode: "Exit code",
     startupFailed: "Abergin failed to start",
     tipNewTab: "New tab (Ctrl+Shift+T)",
     tipMenu: "Menu",
@@ -226,6 +231,8 @@ const I18N = {
     phName: "Mein Server",
     phHost: "192.168.0.10 oder example.com",
     processExited: "Prozess beendet",
+    restart: "Neu starten",
+    exitCode: "Beendigungscode",
     startupFailed: "Abergin konnte nicht gestartet werden",
     tipNewTab: "Neuer Tab (Ctrl+Shift+T)",
     tipMenu: "Menü",
@@ -289,6 +296,8 @@ const I18N = {
     phName: "Mon serveur",
     phHost: "192.168.0.10 ou example.com",
     processExited: "processus terminé",
+    restart: "Redémarrer",
+    exitCode: "Code de sortie",
     startupFailed: "Impossible de démarrer Abergin",
     tipNewTab: "Nouvel onglet (Ctrl+Shift+T)",
     tipMenu: "Menu",
@@ -352,6 +361,8 @@ const I18N = {
     phName: "Mi servidor",
     phHost: "192.168.0.10 o example.com",
     processExited: "proceso finalizado",
+    restart: "Reiniciar",
+    exitCode: "Código de salida",
     startupFailed: "No se pudo iniciar Abergin",
     tipNewTab: "Nueva pestaña (Ctrl+Shift+T)",
     tipMenu: "Menú",
@@ -415,6 +426,8 @@ const I18N = {
     phName: "Mój serwer",
     phHost: "192.168.0.10 lub example.com",
     processExited: "proces zakończony",
+    restart: "Uruchom ponownie",
+    exitCode: "Kod zakończenia",
     startupFailed: "Nie udało się uruchomić Abergin",
     tipNewTab: "Nowa karta (Ctrl+Shift+T)",
     tipMenu: "Menu",
@@ -478,6 +491,8 @@ const I18N = {
     phName: "Můj server",
     phHost: "192.168.0.10 nebo example.com",
     processExited: "proces ukončen",
+    restart: "Spustit znovu",
+    exitCode: "Kód ukončení",
     startupFailed: "Abergin se nepodařilo spustit",
     tipNewTab: "Nová karta (Ctrl+Shift+T)",
     tipMenu: "Nabídka",
@@ -541,6 +556,8 @@ const I18N = {
     phName: "Mano serveris",
     phHost: "192.168.0.10 arba example.com",
     processExited: "procesas baigtas",
+    restart: "Paleisti iš naujo",
+    exitCode: "Išėjimo kodas",
     startupFailed: "Nepavyko paleisti Abergin",
     tipNewTab: "Nauja kortelė (Ctrl+Shift+T)",
     tipMenu: "Meniu",
@@ -604,6 +621,8 @@ const I18N = {
     phName: "Mans serveris",
     phHost: "192.168.0.10 vai example.com",
     processExited: "process pabeigts",
+    restart: "Palaist no jauna",
+    exitCode: "Izejas kods",
     startupFailed: "Neizdevās palaist Abergin",
     tipNewTab: "Jauna cilne (Ctrl+Shift+T)",
     tipMenu: "Izvēlne",
@@ -667,6 +686,8 @@ const I18N = {
     phName: "Minu server",
     phHost: "192.168.0.10 või example.com",
     processExited: "protsess lõpetatud",
+    restart: "Käivita uuesti",
+    exitCode: "Väljumiskood",
     startupFailed: "Abergini käivitamine nurjus",
     tipNewTab: "Uus kaart (Ctrl+Shift+T)",
     tipMenu: "Menüü",
@@ -730,6 +751,8 @@ const I18N = {
     phName: "Min server",
     phHost: "192.168.0.10 eller example.com",
     processExited: "processen er afsluttet",
+    restart: "Genstart",
+    exitCode: "Afslutningskode",
     startupFailed: "Abergin kunne ikke startes",
     tipNewTab: "Ny fane (Ctrl+Shift+T)",
     tipMenu: "Menu",
@@ -793,6 +816,8 @@ const I18N = {
     phName: "Min server",
     phHost: "192.168.0.10 eller example.com",
     processExited: "prosess avsluttet",
+    restart: "Start på nytt",
+    exitCode: "Avslutningskode",
     startupFailed: "Kunne ikke starte Abergin",
     tipNewTab: "Ny fane (Ctrl+Shift+T)",
     tipMenu: "Meny",
@@ -856,6 +881,8 @@ const I18N = {
     phName: "Mijn server",
     phHost: "192.168.0.10 of example.com",
     processExited: "proces beëindigd",
+    restart: "Opnieuw starten",
+    exitCode: "Afsluitcode",
     startupFailed: "Abergin kon niet worden gestart",
     tipNewTab: "Nieuw tabblad (Ctrl+Shift+T)",
     tipMenu: "Menu",
@@ -919,6 +946,8 @@ const I18N = {
     phName: "Serverul meu",
     phHost: "192.168.0.10 sau example.com",
     processExited: "proces încheiat",
+    restart: "Repornește",
+    exitCode: "Cod de ieșire",
     startupFailed: "Abergin nu a putut fi pornit",
     tipNewTab: "Filă nouă (Ctrl+Shift+T)",
     tipMenu: "Meniu",
@@ -982,6 +1011,8 @@ const I18N = {
     phName: "Mənim serverim",
     phHost: "192.168.0.10 və ya example.com",
     processExited: "proses bitdi",
+    restart: "Yenidən başlat",
+    exitCode: "Çıxış kodu",
     startupFailed: "Abergin işə salına bilmədi",
     tipNewTab: "Yeni tab (Ctrl+Shift+T)",
     tipMenu: "Menyu",
@@ -1045,6 +1076,8 @@ const I18N = {
     phName: "マイサーバー",
     phHost: "192.168.0.10 または example.com",
     processExited: "プロセスが終了しました",
+    restart: "再起動",
+    exitCode: "終了コード",
     startupFailed: "Abergin を起動できませんでした",
     tipNewTab: "新しいタブ (Ctrl+Shift+T)",
     tipMenu: "メニュー",
@@ -1134,6 +1167,7 @@ function applyI18n() {
 function setLocale(code) {
   locale = code;
   applyI18n();
+  for (const leaf of leaves.values()) refreshExitBanner(leaf);
   buildProfileMenu();
   persistState();
   if (explorerIntegration) setExplorerIntegration(true).catch(showError);
@@ -1343,6 +1377,7 @@ let activeTabId = null;
 let tabSeq = 0;
 let pendingTabFocus = null;
 let restoringState = false;
+let appReady = false;
 let searchState = null;
 
 let sshConnections = []; // [{ name, host, user, port, key }]
@@ -1403,19 +1438,6 @@ function activeLeaf() {
   return tabs.get(activeTabId)?.activeLeaf ?? null;
 }
 
-function serializeNode(node) {
-  if (node.type === "leaf") {
-    return { type: "leaf", profile: serializeProfile(node.leaf.profile) };
-  }
-  return {
-    type: "split",
-    dir: node.dir,
-    sizes: [...node.sizes],
-    a: serializeNode(node.a),
-    b: serializeNode(node.b),
-  };
-}
-
 function panePath(node, target) {
   if (!node || !target) return null;
   if (node === target) return "";
@@ -1443,16 +1465,22 @@ let saveTimer = null;
 let saveChain = Promise.resolve();
 
 function stateSnapshot() {
-  const liveTabs = [...tabs.values()].filter((t) => t.root);
-  const tabsArr = liveTabs.map((t) => ({
-      name: t.customName ?? null,
-      profile: serializeProfile(t.profile),
-      layout: serializeNode(t.root),
-      activePane: panePath(t.root, t.activeLeaf?.node),
-    }));
+  const liveTabs = [...tabs.values()].filter((tab) => tab.root && !tab.closing)
+    .map((tab) => ({ tab, saved: serializeRestorableNode(tab.root, tab.activeLeaf, serializeProfile) }))
+    .filter(({ saved }) => saved);
+  const tabsArr = liveTabs.map(({ tab, saved }) => {
+    const running = leavesOf(tab.root).filter((leaf) => !leaf.closed && !leaf.closing && !leaf.exited);
+    const profile = running.includes(tab.activeLeaf) ? tab.activeLeaf.profile : running[0].profile;
+    return {
+      name: tab.customName ?? null,
+      profile: serializeProfile(profile),
+      layout: saved.layout,
+      activePane: saved.activePane ?? "",
+    };
+  });
   return {
     tabs: tabsArr,
-    activeTab: liveTabs.findIndex((tab) => tab.id === activeTabId),
+    activeTab: liveTabs.findIndex(({ tab }) => tab.id === activeTabId),
     ssh: sshConnections.map((connection) => ({ ...connection })),
     locale,
     theme: themeId,
@@ -1531,13 +1559,19 @@ async function makeLeaf(tab, profile) {
   el.className = "leaf";
   tab.container.appendChild(el); // attach so xterm can measure on open
 
+  // FitAddon measures the terminal element's parent. The host can shrink when
+  // an exited session shows its actions below the preserved scrollback.
+  const termHost = document.createElement("div");
+  termHost.className = "terminal-host";
+  el.appendChild(termHost);
+
   const term = new Terminal(termOptions());
   const fit = new FitAddon();
   const search = new SearchAddon();
   term.loadAddon(fit);
   term.loadAddon(search);
   term.loadAddon(new WebLinksAddon());
-  term.open(el);
+  term.open(termHost);
   loadRenderer(term);
   try {
     fit.fit();
@@ -1577,6 +1611,10 @@ async function makeLeaf(tab, profile) {
     resizeRunning: false,
     resizeErrorShown: false,
     closed: false,
+    exited: false,
+    exitCode: null,
+    pendingExit: null,
+    restarting: false,
     // Last grid size sent to the PTY, so we can skip redundant resizes.
     lastCols: term.cols,
     lastRows: term.rows,
@@ -1696,7 +1734,8 @@ async function createTab(profile, customName, layoutSpec, activePane) {
   tab.container.classList.remove("measuring");
   if (pendingTabFocus === id) activate(id, true);
   persistState();
-  return id;
+  await flushPendingExits(tab);
+  return tabs.has(id) ? id : null;
 }
 
 async function buildNode(tab, spec, parent) {
@@ -1793,7 +1832,10 @@ function attachResizer(sp, node, aEl, bEl) {
 
 // ---- split / close / focus ----
 function disposeLeaf(leaf, closeSession = true) {
+  if (leaf.closed) return Promise.resolve();
   leaf.closed = true;
+  leaf.inputBuffer = "";
+  leaf.resizePending = null;
   leaf.ro?.disconnect();
   leaves.delete(leaf.sessionId);
   leaf.term.dispose();
@@ -1804,13 +1846,110 @@ function disposeLeaf(leaf, closeSession = true) {
   return Promise.resolve();
 }
 
+function refreshExitBanner(leaf) {
+  if (!leaf.exitBanner) return;
+  leaf.exitMessage.textContent = leaf.exitCode === null
+    ? tr("processExited")
+    : `${tr("processExited")} · ${tr("exitCode")}: ${leaf.exitCode}`;
+  leaf.restartButton.textContent = tr("restart");
+  leaf.closeButton.textContent = tr("tipClose");
+}
+
+function showExitBanner(leaf) {
+  const banner = document.createElement("div");
+  banner.className = "session-exit";
+  banner.setAttribute("role", "group");
+  const message = document.createElement("span");
+  message.className = "session-exit-message";
+  const actions = document.createElement("div");
+  actions.className = "session-exit-actions";
+  const restart = document.createElement("button");
+  restart.type = "button";
+  restart.addEventListener("click", () => restartLeaf(leaf).catch(showError));
+  const close = document.createElement("button");
+  close.type = "button";
+  close.addEventListener("click", () => closeLeaf(leaf).catch(showError));
+  actions.append(restart, close);
+  banner.append(message, actions);
+  leaf.exitBanner = banner;
+  leaf.exitMessage = message;
+  leaf.restartButton = restart;
+  leaf.closeButton = close;
+  leaf.el.append(banner);
+  leaf.el.classList.add("exited");
+  refreshExitBanner(leaf);
+  requestAnimationFrame(() => syncLeafSize(leaf));
+}
+
+async function handleSessionExit(leaf, payload) {
+  if (leaf.closed || leaf.closing || leaf.exited) return;
+  const tab = leaf.tab;
+  if (!tab.root || panePath(tab.root, leaf.node) === null) {
+    leaf.pendingExit = payload;
+    return;
+  }
+  leaf.pendingExit = null;
+  leaf.exited = true;
+  leaf.exitCode = Number.isInteger(payload.code) ? payload.code : null;
+  leaf.inputBuffer = "";
+  leaf.resizePending = null;
+  if (leaf.exitCode === 0) {
+    await closeLeaf(leaf);
+  } else {
+    showExitBanner(leaf);
+    updateLeafFocus(tab);
+    persistState();
+  }
+}
+
+async function flushPendingExits(tab) {
+  for (const leaf of leavesOf(tab.root)) {
+    if (leaf.pendingExit) {
+      const payload = leaf.pendingExit;
+      leaf.pendingExit = null;
+      await handleSessionExit(leaf, payload);
+    }
+  }
+}
+
+async function restartLeaf(leaf) {
+  if (!leaf.exited || leaf.closed || leaf.closing || leaf.restarting) return;
+  leaf.restarting = true;
+  leaf.restartButton.disabled = true;
+  const tab = leaf.tab;
+  let replacement;
+  try {
+    replacement = await makeLeaf(tab, { ...leaf.profile });
+    if (!tabs.has(tab.id) || tab.closing || leaf.closed || panePath(tab.root, leaf.node) === null) {
+      await disposeLeaf(replacement);
+      return;
+    }
+    const parent = leaf.node.parent;
+    replacement.node.parent = parent;
+    if (parent) replaceChild(parent, leaf.node, replacement.node);
+    else tab.root = replacement.node;
+    if (tab.activeLeaf === leaf) {
+      tab.activeLeaf = replacement;
+      tab.profile = replacement.profile;
+    }
+    await disposeLeaf(leaf, false);
+    renderTab(tab);
+    if (activeTabId === tab.id && tab.activeLeaf === replacement) replacement.term.focus();
+    persistState();
+    await flushPendingExits(tab);
+  } finally {
+    leaf.restarting = false;
+    if (!leaf.closed) leaf.restartButton.disabled = false;
+  }
+}
+
 function createTabInCurrentDirectory() {
   const profile = activeLeaf()?.profile;
   return createTab(profile ? { ...profile } : defaultProfile());
 }
 
 async function splitLeaf(leaf, dir) {
-  if (leaf.splitting || leaf.closed) return;
+  if (leaf.splitting || leaf.closed || leaf.exited) return;
   leaf.splitting = true;
   const tab = leaf.tab;
   const oldNode = leaf.node;
@@ -1848,6 +1987,7 @@ async function splitLeaf(leaf, dir) {
   if (activeTabId === tab.id) newLeaf.term.focus();
   leaf.splitting = false;
   persistState();
+  await flushPendingExits(tab);
 }
 
 async function closeLeaf(leaf) {
@@ -1892,6 +2032,7 @@ function updateLeafFocus(tab) {
   const all = leavesOf(tab.root);
   const multi = all.length > 1;
   for (const lf of all) lf.el.classList.toggle("focused", multi && lf === tab.activeLeaf);
+  tab.tabEl.classList.toggle("has-exited", all.some((leaf) => leaf.exited && !leaf.closed));
 }
 
 // Alt+Arrow: move focus to the nearest pane in the given direction.
@@ -1929,32 +2070,32 @@ function focusDir(dir) {
 // drop a cell when that happens. The client-side refresh() is safe — it just
 // repaints xterm's existing buffer, fixing a stale frame left by a hidden pane.
 function enqueueInput(leaf, data) {
-  if (leaf.closed || (!data && !leaf.inputBuffer)) return;
+  if (leaf.closed || leaf.closing || leaf.exited || (!data && !leaf.inputBuffer)) return;
   leaf.inputBuffer += data;
   if (leaf.inputRunning) return;
   leaf.inputRunning = true;
   queueMicrotask(async () => {
     try {
-      while (leaf.inputBuffer && !leaf.closed) {
+      while (leaf.inputBuffer && !leaf.closed && !leaf.closing && !leaf.exited) {
         const chunk = leaf.inputBuffer;
         leaf.inputBuffer = "";
         await invoke("write_session", { id: leaf.sessionId, data: chunk });
       }
     } catch (error) {
       leaf.inputBuffer = "";
-      showError(error);
+      if (!leaf.closed && !leaf.closing && !leaf.exited) showError(error);
     } finally {
       leaf.inputRunning = false;
-      if (leaf.inputBuffer && !leaf.closed) enqueueInput(leaf, "");
+      if (leaf.inputBuffer && !leaf.closed && !leaf.closing && !leaf.exited) enqueueInput(leaf, "");
     }
   });
 }
 
 async function sendResize(leaf) {
-  if (leaf.resizeRunning || leaf.closed) return;
+  if (leaf.resizeRunning || leaf.closed || leaf.closing || leaf.exited) return;
   leaf.resizeRunning = true;
   try {
-    while (leaf.resizePending && !leaf.closed) {
+    while (leaf.resizePending && !leaf.closed && !leaf.closing && !leaf.exited) {
       const size = leaf.resizePending;
       leaf.resizePending = null;
       if (size.cols === leaf.lastCols && size.rows === leaf.lastRows) continue;
@@ -1964,12 +2105,12 @@ async function sendResize(leaf) {
       leaf.resizeErrorShown = false;
     }
   } catch (error) {
-    if (!leaf.resizeErrorShown) showError(error);
+    if (!leaf.resizeErrorShown && !leaf.closed && !leaf.closing && !leaf.exited) showError(error);
     leaf.resizeErrorShown = true;
     // Retry on the next size or visibility event.
   } finally {
     leaf.resizeRunning = false;
-    if (leaf.resizePending && !leaf.closed) sendResize(leaf);
+    if (leaf.resizePending && !leaf.closed && !leaf.closing && !leaf.exited) sendResize(leaf);
   }
 }
 
@@ -1982,7 +2123,7 @@ function syncLeafSize(leaf) {
       leaf.fit.fit();
     }
     const { cols, rows } = leaf.term;
-    if (cols !== leaf.lastCols || rows !== leaf.lastRows) {
+    if (!leaf.exited && !leaf.closing && (cols !== leaf.lastCols || rows !== leaf.lastRows)) {
       leaf.resizePending = { cols, rows };
       sendResize(leaf);
     }
@@ -2188,14 +2329,14 @@ function showTabMenu(x, y, id) {
 async function pasteToLeaf(leaf) {
   try {
     const text = await clipboardRead();
-    if (!text || leaf.closed || activeLeaf() !== leaf) return;
+    if (!text || leaf.closed || leaf.closing || leaf.exited || activeLeaf() !== leaf) return;
     leaf.term.focus();
     // xterm normalizes newlines and wraps bracketed paste when the child asks.
     leaf.term.paste(text);
   } catch (error) {
     showError(error);
   } finally {
-    if (!leaf.closed && activeLeaf() === leaf) leaf.term.focus();
+    if (!leaf.closed && !leaf.exited && activeLeaf() === leaf) leaf.term.focus();
   }
 }
 
@@ -2230,14 +2371,15 @@ function showTermMenu(x, y) {
 
   menu.append(
     mk(tr("copy"), () => clipboardWrite(sel).catch(showError).finally(() => leaf.term.focus()), !sel),
-    mk(tr("paste"), () => pasteToLeaf(leaf)),
+    mk(tr("paste"), () => pasteToLeaf(leaf), leaf.exited),
     mk(tr("selectAll"), () => {
       leaf.term.selectAll();
       leaf.term.focus();
     }),
     sep(),
-    mk(tr("splitRight"), () => splitLeaf(leaf, "row").catch(showError)),
-    mk(tr("splitDown"), () => splitLeaf(leaf, "col").catch(showError)),
+    mk(tr("splitRight"), () => splitLeaf(leaf, "row").catch(showError), leaf.exited),
+    mk(tr("splitDown"), () => splitLeaf(leaf, "col").catch(showError), leaf.exited),
+    ...(leaf.exited ? [mk(tr("restart"), () => restartLeaf(leaf).catch(showError))] : []),
     mk(tr("closePane"), () => closeLeaf(leaf).catch(showError)),
   );
 
@@ -2298,7 +2440,7 @@ async function closeTab(id) {
     else activeTabId = null;
   }
   persistState();
-  if (tabs.size === 0) {
+  if (tabs.size === 0 && appReady) {
     await flushState();
     await appWindow.close();
   }
@@ -2996,9 +3138,7 @@ async function main() {
   });
   await listen("pty-exit", (e) => {
     const lf = leaves.get(e.payload.id);
-    if (lf) {
-      lf.term.write(`\r\n\x1b[38;5;245m[${tr("processExited")}]\x1b[0m\r\n`);
-    }
+    if (lf) handleSessionExit(lf, e.payload).catch(showError);
   });
 
   explorerIntegrationAvailable = await invoke("explorer_integration_available").catch(() => false);
@@ -3173,6 +3313,7 @@ async function main() {
     );
   }
 
+  appReady = true;
   if (tabs.size === 0) {
     await createTab();
   } else {

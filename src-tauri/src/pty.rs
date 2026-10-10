@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
 use base64::Engine;
 use parking_lot::Mutex;
@@ -42,6 +43,7 @@ struct OutputPayload {
 #[derive(Serialize, Clone)]
 struct ExitPayload {
     id: u32,
+    code: Option<u32>,
 }
 
 // Git Bash does not emit OSC 7 by default. PROMPT_COMMAND runs after each
@@ -196,9 +198,30 @@ fn spawn_reader(
                 Err(_) => break,
             }
         }
-        sessions.lock().remove(&id);
-        let _ = app.emit("pty-exit", ExitPayload { id });
+        // A user closing a pane removes its session first. Only report a
+        // process that ended on its own, after its final output was emitted.
+        if let Some(mut session) = sessions.lock().remove(&id) {
+            let code = exit_code_after_reader_stops(session.child.as_mut());
+            let _ = app.emit("pty-exit", ExitPayload { id, code });
+        }
     });
+}
+
+fn exit_code_after_reader_stops(child: &mut dyn portable_pty::Child) -> Option<u32> {
+    // ConPTY can close its output pipe just before the process handle becomes
+    // signaled. Bound the wait so an unrelated pipe failure cannot hang a thread.
+    for _ in 0..40 {
+        match child.try_wait() {
+            Ok(Some(status)) => return Some(status.exit_code()),
+            Ok(None) => std::thread::sleep(Duration::from_millis(25)),
+            Err(_) => {
+                let _ = child.kill();
+                return None;
+            }
+        }
+    }
+    let _ = child.kill();
+    None
 }
 
 #[tauri::command]
