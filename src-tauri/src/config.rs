@@ -99,7 +99,7 @@ fn default_config() -> Value {
             "color": "#f7768e"
         }));
     }
-    if exists(&wsl) {
+    if exists(&wsl) && super::wsl::is_ready(&wsl) {
         profiles.push(json!({
             "name": "WSL",
             "shell": wsl,

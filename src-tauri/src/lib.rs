@@ -4,6 +4,7 @@ mod shell_integration;
 mod state;
 #[cfg(feature = "store")]
 mod store_migration;
+mod wsl;
 
 use pty::PtyState;
 use shell_integration::LaunchState;

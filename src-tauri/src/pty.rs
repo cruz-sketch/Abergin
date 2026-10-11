@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::Arc;
 use std::time::Duration;
 
 use base64::Engine;
 use parking_lot::Mutex;
-use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
+use portable_pty::{native_pty_system, Child, ChildKiller, CommandBuilder, MasterPty, PtySize};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
@@ -14,8 +15,11 @@ use tauri::{AppHandle, Emitter};
 struct Session {
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
-    child: Box<dyn portable_pty::Child + Send + Sync>,
+    child: Option<Box<dyn Child + Send + Sync>>,
+    killer: Box<dyn ChildKiller + Send + Sync>,
     reader: Option<Box<dyn Read + Send>>,
+    exit_sender: Sender<Option<ExitPayload>>,
+    exit_receiver: Option<Receiver<Option<ExitPayload>>>,
 }
 
 #[derive(Default)]
@@ -96,6 +100,11 @@ pub fn create_session(
     cols: u16,
     rows: u16,
 ) -> Result<u32, String> {
+    let wsl = is_wsl(&profile.shell);
+    if wsl && !super::wsl::is_ready(&profile.shell) {
+        return Err("WSL is unavailable or no Linux distribution is installed for this Windows user. Run `wsl --list --verbose` in PowerShell to check the installation.".to_string());
+    }
+
     let pty_system = native_pty_system();
     let pair = pty_system
         .openpty(PtySize {
@@ -112,16 +121,18 @@ pub fn create_session(
         .clone()
         .filter(|c| !c.is_empty())
         .or_else(dirs_home);
-    let wsl_cwd = is_wsl(&profile.shell) && cwd.as_deref().is_some_and(|dir| dir.starts_with('/'));
-    if wsl_cwd {
+    let wsl_cwd = wsl && cwd.as_deref().is_some_and(|dir| dir.starts_with('/'));
+    let wsl_supports_cd = wsl_cwd && super::wsl::supports_cd(&profile.shell);
+    if wsl_supports_cd {
         cmd.arg("--cd");
         cmd.arg(cwd.as_deref().unwrap());
     }
     for arg in &profile.args {
         cmd.arg(arg);
     }
-    if !wsl_cwd {
-        if let Some(dir) = cwd {
+    if !wsl_supports_cd {
+        let launch_cwd = if wsl_cwd { dirs_home() } else { cwd };
+        if let Some(dir) = launch_cwd {
             cmd.cwd(dir);
         }
     }
@@ -142,19 +153,24 @@ pub fn create_session(
     }
 
     let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    let killer = child.clone_killer();
 
     let reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
     let id = state.counter.fetch_add(1, Ordering::SeqCst);
+    let (exit_sender, exit_receiver) = mpsc::channel();
 
     state.sessions.lock().insert(
         id,
         Session {
             master: Arc::new(Mutex::new(pair.master)),
             writer: Arc::new(Mutex::new(writer)),
-            child,
+            child: Some(child),
+            killer,
             reader: Some(reader),
+            exit_sender,
+            exit_receiver: Some(exit_receiver),
         },
     );
 
@@ -167,16 +183,23 @@ pub fn attach_session(
     state: tauri::State<'_, PtyState>,
     id: u32,
 ) -> Result<(), String> {
-    let reader = state
-        .sessions
-        .lock()
-        .get_mut(&id)
-        .ok_or_else(|| format!("session {id} does not exist"))?
-        .reader
-        .take()
-        .ok_or_else(|| format!("session {id} is already attached"))?;
+    let (reader, child, exit_receiver) = {
+        let mut sessions = state.sessions.lock();
+        let session = sessions
+            .get_mut(&id)
+            .ok_or_else(|| format!("session {id} does not exist"))?;
+        if session.reader.is_none() || session.child.is_none() || session.exit_receiver.is_none() {
+            return Err(format!("session {id} is already attached"));
+        }
+        (
+            session.reader.take().unwrap(),
+            session.child.take().unwrap(),
+            session.exit_receiver.take().unwrap(),
+        )
+    };
 
-    spawn_reader(app, id, reader, Arc::clone(&state.sessions));
+    spawn_reader(app, id, reader, exit_receiver, Arc::clone(&state.sessions));
+    spawn_exit_monitor(id, child, Arc::clone(&state.sessions));
     Ok(())
 }
 
@@ -184,6 +207,7 @@ fn spawn_reader(
     app: AppHandle,
     id: u32,
     mut reader: Box<dyn Read + Send>,
+    exit_receiver: Receiver<Option<ExitPayload>>,
     sessions: Arc<Mutex<HashMap<u32, Session>>>,
 ) {
     std::thread::spawn(move || {
@@ -198,30 +222,45 @@ fn spawn_reader(
                 Err(_) => break,
             }
         }
-        // A user closing a pane removes its session first. Only report a
-        // process that ended on its own, after its final output was emitted.
-        if let Some(mut session) = sessions.lock().remove(&id) {
-            let code = exit_code_after_reader_stops(session.child.as_mut());
-            let _ = app.emit("pty-exit", ExitPayload { id, code });
+        // The process monitor closes the ConPTY after the child exits. Read
+        // until then so the frontend sees the final bytes before pty-exit.
+        match exit_receiver.recv_timeout(Duration::from_secs(2)) {
+            Ok(Some(payload)) => {
+                let _ = app.emit("pty-exit", payload);
+            }
+            Ok(None) => {} // A pane was closed by the user.
+            Err(RecvTimeoutError::Timeout) => {
+                // The output pipe failed while the child was still alive.
+                // Do not leave a session that can no longer show its output.
+                let session = sessions.lock().remove(&id);
+                if let Some(mut session) = session {
+                    let _ = session.killer.kill();
+                    let _ = app.emit("pty-exit", ExitPayload { id, code: None });
+                }
+            }
+            Err(RecvTimeoutError::Disconnected) => {}
         }
     });
 }
 
-fn exit_code_after_reader_stops(child: &mut dyn portable_pty::Child) -> Option<u32> {
-    // ConPTY can close its output pipe just before the process handle becomes
-    // signaled. Bound the wait so an unrelated pipe failure cannot hang a thread.
-    for _ in 0..40 {
-        match child.try_wait() {
-            Ok(Some(status)) => return Some(status.exit_code()),
-            Ok(None) => std::thread::sleep(Duration::from_millis(25)),
-            Err(_) => {
-                let _ = child.kill();
-                return None;
+fn spawn_exit_monitor(
+    id: u32,
+    mut child: Box<dyn Child + Send + Sync>,
+    sessions: Arc<Mutex<HashMap<u32, Session>>>,
+) {
+    std::thread::spawn(move || {
+        let code = child.wait().ok().map(|status| status.exit_code());
+        // Closing the master releases ConPTY's output pipe; the reader then
+        // drains it and emits the exit event. A manual close removed the
+        // session first, so it must not produce an exit event.
+        let session = sessions.lock().remove(&id);
+        if let Some(mut session) = session {
+            if code.is_none() {
+                let _ = session.killer.kill();
             }
+            let _ = session.exit_sender.send(Some(ExitPayload { id, code }));
         }
-    }
-    let _ = child.kill();
-    None
+    });
 }
 
 #[tauri::command]
@@ -278,11 +317,77 @@ pub fn resize_session(
 pub fn close_session(state: tauri::State<'_, PtyState>, id: u32) -> Result<(), String> {
     let session = state.sessions.lock().remove(&id);
     if let Some(mut sess) = session {
-        let _ = sess.child.kill();
+        let _ = sess.exit_sender.send(None);
+        let _ = sess.killer.kill();
     }
     Ok(())
 }
 
 fn dirs_home() -> Option<String> {
     std::env::var("USERPROFILE").ok()
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::{spawn_exit_monitor, Session};
+    use parking_lot::Mutex;
+    use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+    use std::collections::HashMap;
+    use std::io::Read;
+    use std::sync::{mpsc, Arc};
+    use std::time::Duration;
+
+    #[test]
+    fn shell_exit_releases_conpty_and_drains_output() {
+        let pair = native_pty_system()
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .unwrap();
+        let mut command = CommandBuilder::new("cmd.exe");
+        command.arg("/C");
+        command.arg("echo abergin-final-output");
+        let child = pair.slave.spawn_command(command).unwrap();
+        let killer = child.clone_killer();
+        let mut reader = pair.master.try_clone_reader().unwrap();
+        let writer = pair.master.take_writer().unwrap();
+        drop(pair.slave);
+
+        let (exit_sender, exit_receiver) = mpsc::channel();
+        let sessions = Arc::new(Mutex::new(HashMap::new()));
+        sessions.lock().insert(
+            1,
+            Session {
+                master: Arc::new(Mutex::new(pair.master)),
+                writer: Arc::new(Mutex::new(writer)),
+                child: None,
+                killer,
+                reader: None,
+                exit_sender,
+                exit_receiver: None,
+            },
+        );
+        let (output_sender, output_receiver) = mpsc::channel();
+        std::thread::spawn(move || {
+            let mut output = Vec::new();
+            let result = reader.read_to_end(&mut output).map(|_| output);
+            let _ = output_sender.send(result);
+        });
+        spawn_exit_monitor(1, child, Arc::clone(&sessions));
+
+        let exit = exit_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("process exit was not reported")
+            .expect("process exit was treated as a manual close");
+        assert_eq!(exit.code, Some(0));
+        let output = output_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("ConPTY output remained open after process exit")
+            .unwrap();
+        assert!(String::from_utf8_lossy(&output).contains("abergin-final-output"));
+        assert!(sessions.lock().is_empty());
+    }
 }
