@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       identity_name:
-        description: Package/Identity/Name from Partner Center (local value for testing)
+        description: Package/Identity/Name from Partner Center
         required: true
-        default: Abergin.Terminal.Local
+        default: 2PM.Abergin
       publisher:
-        description: Package/Identity/Publisher from Partner Center (local value for testing)
+        description: Package/Identity/Publisher from Partner Center
         required: true
-        default: CN=2PM Local
+        default: CN=AC4705CC-2555-41FE-A23B-67E4210F8843
       publisher_display_name:
         description: Publisher name shown in Windows
         required: true

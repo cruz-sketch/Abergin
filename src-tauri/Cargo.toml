@@ -1,6 +1,6 @@
 [package]
 name = "abergin"
-version = "0.2.7"
+version = "0.2.8"
 description = "A stylish, native-feeling terminal for Windows"
 authors = ["2PM"]
 edition = "2021"

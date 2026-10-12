@@ -6,54 +6,53 @@ This package is **unsigned**; Partner Center signs accepted MSIX submissions.
 It is not an installer for direct download. The existing NSIS build remains the
 standalone distribution.
 
-## Build before Partner Center is ready
+## Build for the 2PM Partner Center product
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
-  -IdentityName Abergin.Terminal.Local `
-  -Publisher 'CN=2PM Local' `
+  -IdentityName 2PM.Abergin `
+  -Publisher 'CN=AC4705CC-2555-41FE-A23B-67E4210F8843' `
   -Architecture x64
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
-  -IdentityName Abergin.Terminal.Local `
-  -Publisher 'CN=2PM Local' `
+  -IdentityName 2PM.Abergin `
+  -Publisher 'CN=AC4705CC-2555-41FE-A23B-67E4210F8843' `
   -Architecture arm64
 ```
 
-Outputs: `store/out/Abergin.Terminal.Local_1.0.207.0_x64.msix` and
-`store/out/Abergin.Terminal.Local_1.0.207.0_arm64.msix` for app version 0.2.7.
+Outputs: `store/out/2PM.Abergin_1.0.208.0_x64.msix` and
+`store/out/2PM.Abergin_1.0.208.0_arm64.msix` for app version 0.2.8.
 Build and package contents are under `store/out/` and ignored by Git.
 GitHub Actions builds both architectures on every `v*` release tag and keeps
 them as a `Abergin-Store-MSIX-unsigned` workflow artifact. It also attaches
 them to the draft GitHub Release, alongside the standalone NSIS installer.
 The release notes label the MSIX files as unsigned Store submission packages.
-The **Store MSIX** workflow can be started manually with the exact Partner
-Center identity once it is available; the **Release** workflow can be started
-manually to test both NSIS and placeholder-identity MSIX builds without
-creating a GitHub Release.
+The **Store MSIX** workflow can be started manually to rebuild packages with
+the Partner Center identity; the **Release** workflow can be started manually
+to test both NSIS and MSIX builds without creating a GitHub Release.
 The script builds with the Rust `store` feature and a separate Tauri identifier
 (`com.abergin.terminal.store`). This keeps the Store and standalone apps from
 interfering with each other's single-instance locks. On first launch the Store
 app copies existing standalone settings and saved tabs, if present. It does
 not modify the NSIS release build.
 
-## Final package identity
+## Package identity
 
-After reserving Abergin in Partner Center, open **Product management → Product
-identity** and copy the exact **Package/Identity/Name** and **Package/Identity/
-Publisher** values. Both are case-sensitive. Rebuild with those values; do not
-upload a package created with the local placeholder identity.
-`2PM` is the displayed publisher name; the final `Package/Identity/Publisher`
-must be copied from Partner Center, even if it has a different spelling.
+Partner Center expects **Package/Identity/Name** `2PM.Abergin`, **Package/Identity/
+Publisher** `CN=AC4705CC-2555-41FE-A23B-67E4210F8843`, and package family
+`2PM.Abergin_c2vw9vxzprnep`. The manifest name and publisher are
+case-sensitive. `2PM` is the displayed publisher name; it does not replace the
+GUID-based identity publisher. If Partner Center shows different values later,
+copy its exact values into the build and workflow configuration.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
-  -IdentityName '<Package/Identity/Name>' `
-  -Publisher '<Package/Identity/Publisher>' `
+  -IdentityName '2PM.Abergin' `
+  -Publisher 'CN=AC4705CC-2555-41FE-A23B-67E4210F8843' `
   -PublisherDisplayName '2PM' `
   -Architecture x64
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
-  -IdentityName '<Package/Identity/Name>' `
-  -Publisher '<Package/Identity/Publisher>' `
+  -IdentityName '2PM.Abergin' `
+  -Publisher 'CN=AC4705CC-2555-41FE-A23B-67E4210F8843' `
   -PublisherDisplayName '2PM' `
   -Architecture arm64
 ```

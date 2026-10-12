@@ -1,7 +1,7 @@
 {
   "name": "abergin",
   "private": true,
-  "version": "0.2.7",
+  "version": "0.2.8",
   "type": "module",
   "license": "MIT",
   "description": "A fast, modern terminal for Windows built with Tauri + xterm.js",

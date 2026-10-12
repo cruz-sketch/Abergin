@@ -60,9 +60,8 @@ jobs:
             Download the Windows installer (`.exe`) from the assets below.
 
             The x64 and ARM64 `.msix` files are **unsigned Microsoft Store submission
-            packages**. They are not direct-download installers. Packages with the
-            `Abergin.Terminal.Local` identity are previews; rebuild with the exact
-            Partner Center identity before submitting them to the Store.
+            packages** built with the `2PM.Abergin` identity from Partner Center.
+            They are not direct-download installers.
 
             > This is an **unsigned** build, so Windows SmartScreen may warn about an
             > unknown publisher — click **More info → Run anyway**.
@@ -86,8 +85,8 @@ jobs:
         run: |
           foreach ($architecture in @('x64', 'arm64')) {
             ./store/build-msix.ps1 `
-              -IdentityName 'Abergin.Terminal.Local' `
-              -Publisher 'CN=2PM Local' `
+              -IdentityName '2PM.Abergin' `
+              -Publisher 'CN=AC4705CC-2555-41FE-A23B-67E4210F8843' `
               -PublisherDisplayName '2PM' `
               -Architecture $architecture
           }
