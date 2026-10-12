@@ -1,6 +1,7 @@
 # Draft Microsoft Store listing
 
 Category: Developer tools. Suggested price: Free (confirm when submitting).
+Publisher display name: 2PM.
 
 ## English
 

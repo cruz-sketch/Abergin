@@ -7,7 +7,7 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$Publisher,
 
-    [string]$PublisherDisplayName = 'Abergin',
+    [string]$PublisherDisplayName = '2PM',
 
     [ValidateSet('x64', 'arm64')]
     [string]$Architecture = 'x64'

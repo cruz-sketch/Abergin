@@ -87,7 +87,8 @@ jobs:
           foreach ($architecture in @('x64', 'arm64')) {
             ./store/build-msix.ps1 `
               -IdentityName 'Abergin.Terminal.Local' `
-              -Publisher 'CN=Abergin Local' `
+              -Publisher 'CN=2PM Local' `
+              -PublisherDisplayName '2PM' `
               -Architecture $architecture
           }
 

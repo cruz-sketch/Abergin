@@ -11,16 +11,16 @@ standalone distribution.
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
   -IdentityName Abergin.Terminal.Local `
-  -Publisher 'CN=Abergin Local' `
+  -Publisher 'CN=2PM Local' `
   -Architecture x64
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
   -IdentityName Abergin.Terminal.Local `
-  -Publisher 'CN=Abergin Local' `
+  -Publisher 'CN=2PM Local' `
   -Architecture arm64
 ```
 
-Outputs: `store/out/Abergin.Terminal.Local_1.0.204.0_x64.msix` and
-`store/out/Abergin.Terminal.Local_1.0.204.0_arm64.msix` for app version 0.2.4.
+Outputs: `store/out/Abergin.Terminal.Local_1.0.207.0_x64.msix` and
+`store/out/Abergin.Terminal.Local_1.0.207.0_arm64.msix` for app version 0.2.7.
 Build and package contents are under `store/out/` and ignored by Git.
 GitHub Actions builds both architectures on every `v*` release tag and keeps
 them as a `Abergin-Store-MSIX-unsigned` workflow artifact. It also attaches
@@ -42,17 +42,19 @@ After reserving Abergin in Partner Center, open **Product management → Product
 identity** and copy the exact **Package/Identity/Name** and **Package/Identity/
 Publisher** values. Both are case-sensitive. Rebuild with those values; do not
 upload a package created with the local placeholder identity.
+`2PM` is the displayed publisher name; the final `Package/Identity/Publisher`
+must be copied from Partner Center, even if it has a different spelling.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
   -IdentityName '<Package/Identity/Name>' `
   -Publisher '<Package/Identity/Publisher>' `
-  -PublisherDisplayName '<publisher shown to users>' `
+  -PublisherDisplayName '2PM' `
   -Architecture x64
 powershell -NoProfile -ExecutionPolicy Bypass -File store/build-msix.ps1 `
   -IdentityName '<Package/Identity/Name>' `
   -Publisher '<Package/Identity/Publisher>' `
-  -PublisherDisplayName '<publisher shown to users>' `
+  -PublisherDisplayName '2PM' `
   -Architecture arm64
 ```
 

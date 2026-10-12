@@ -10,11 +10,11 @@ on:
       publisher:
         description: Package/Identity/Publisher from Partner Center (local value for testing)
         required: true
-        default: CN=Abergin Local
+        default: CN=2PM Local
       publisher_display_name:
         description: Publisher name shown in Windows
         required: true
-        default: Abergin
+        default: 2PM
 
 permissions:
   contents: read
